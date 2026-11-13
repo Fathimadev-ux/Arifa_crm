@@ -226,7 +226,7 @@ function createChangeRequests(state: DemoState, now: number): ChangeRequest[] {
       ai_notes: "₹8.50 is below the minimum for this quantity: the manager decides.",
     }),
     request(1005, {
-      type: "delivery", buyer_text: "இந்த மாதம் 25ஆம் தேதிக்குள் டெலிவரி கிடைக்குமா?", buyer_text_en: "Can we get delivery by the 25th of this month?",
+      type: "delivery", buyer_text: "Can we get delivery by the 25th of this month?",
       fields: [{ field: "delivery_time", current: "10–12 days", requested: "By the 25th" }], status: "in_progress",
       sla_due_at: toIso(now - HOUR), created_at: toIso(now - 5 * HOUR),
     }),
