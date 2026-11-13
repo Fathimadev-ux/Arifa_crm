@@ -1,7 +1,8 @@
 import type { LucideIcon } from "lucide-react";
 import type { ButtonHTMLAttributes, CSSProperties, ReactNode } from "react";
 import { stageLabel } from "@/config/stages";
-import type { StageId } from "@/lib/types";
+import type { DealStage } from "@/lib/api/client";
+import type { Deal } from "@/lib/api/crm";
 
 type ButtonVariant = "primary" | "secondary";
 
@@ -106,13 +107,21 @@ export function Avatar({ name, size = "sm", inverted = false }: { name: string; 
   );
 }
 
-export function StageTag({ stage }: { stage: StageId }) {
+export function StageTag({ stage }: { stage: DealStage }) {
   const isWon = stage === "WON";
   return (
     <span className={`inline-flex h-7 cursor-default items-center rounded-full px-3 text-xs font-medium transition-colors hover:bg-black hover:text-white ${isWon ? "bg-black text-white" : "bg-neutral-100 text-black"}`}>
       {stageLabel(stage)}
     </span>
   );
+}
+
+/** One small pill for the state that matters most on a deal: opted out, or the AI paused. */
+export function DealFlag({ deal }: { deal: Pick<Deal, "opted_out_at" | "ai_enabled" | "stage"> }) {
+  if (deal.opted_out_at) return <span className="shrink-0 rounded-full bg-black px-2.5 py-1 text-[10px] font-semibold text-white">Opted out</span>;
+  if (!deal.ai_enabled && deal.stage !== "WON" && deal.stage !== "LOST")
+    return <span className="shrink-0 rounded-full border border-black px-2.5 py-1 text-[10px] font-semibold">AI paused</span>;
+  return null;
 }
 
 export function Section({ title, children, index = 0 }: { title: string; children: ReactNode; index?: number }) {
@@ -137,6 +146,16 @@ export function DetailList({ items }: { items: [label: string, value: ReactNode]
           </div>
         ))}
     </dl>
+  );
+}
+
+/** A read that failed: the backend's own message. */
+export function ErrorState({ message }: { message: string }) {
+  return (
+    <div className="animate-enter panel py-16 text-center">
+      <p className="font-medium">Couldn&apos;t load this</p>
+      <p className="mt-1 text-sm text-neutral-500">{message}</p>
+    </div>
   );
 }
 

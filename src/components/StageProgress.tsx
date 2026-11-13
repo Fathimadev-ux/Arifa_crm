@@ -1,10 +1,10 @@
 import { STAGES } from "@/config/stages";
-import type { StageId } from "@/lib/types";
+import type { DealStage } from "@/lib/api/client";
 
 const OPEN_STAGES = STAGES.filter((stage) => stage.id !== "LOST");
 
 /** A step bar showing how far the deal has come. A lost deal stays grey from the stage it was lost at. */
-export function StageProgress({ stage }: { stage: StageId }) {
+export function StageProgress({ stage }: { stage: DealStage }) {
   const currentIndex = OPEN_STAGES.findIndex((item) => item.id === stage);
   const isLost = stage === "LOST";
 

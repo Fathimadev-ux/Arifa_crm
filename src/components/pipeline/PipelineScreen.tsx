@@ -1,87 +1,78 @@
 "use client";
 
-import { SearchX, Trophy, Wallet } from "lucide-react";
-import { useMemo, useState } from "react";
+import { Briefcase, SearchX, Trophy } from "lucide-react";
+import { useState } from "react";
 import { can } from "@/config/roles";
-import { isClosedStage, stageLabel } from "@/config/stages";
-import { formatCompactMoney } from "@/lib/format";
-import { EMPTY_FILTERS, type PipelineCard, type PipelineFilters, applyFilters, distinctValues, moveBlockedReason, toCard } from "@/lib/pipeline-cards";
-import type { StageId } from "@/lib/types";
-import { useCrm } from "@/store/crm-store";
+import { isClosedStage } from "@/config/stages";
+import type { DealStage } from "@/lib/api/client";
+import { type Deal, moveDeal, useDeals } from "@/lib/api/crm";
+import { EMPTY_FILTERS, type PipelineFilters, applyFilters, moveBlockedReason } from "@/lib/pipeline-cards";
+import { useStaffNames } from "@/hooks/useStaffNames";
+import { useSession } from "@/store/session";
 import { AnimatedNumber } from "@/components/AnimatedNumber";
 import { showToast } from "@/components/Toaster";
 import { KanbanBoard } from "@/components/pipeline/KanbanBoard";
 import { PipelineTable } from "@/components/pipeline/PipelineTable";
 import { type PipelineView, PipelineToolbar, ViewToggle } from "@/components/pipeline/PipelineToolbar";
-import { Button, LoadingState, PageHeader, StatCard } from "@/components/ui";
-
-function PipelineStats({ cards }: { cards: PipelineCard[] }) {
-  const openValue = cards.filter((card) => !isClosedStage(card.lead.stage)).reduce((sum, card) => sum + card.value, 0);
-  const wonValue = cards.filter((card) => card.lead.stage === "WON").reduce((sum, card) => sum + card.value, 0);
-
-  return (
-    <div className="mb-4 grid grid-cols-2 gap-3">
-      <StatCard index={1} icon={Wallet} label="Open pipeline" value={<AnimatedNumber value={openValue} format={formatCompactMoney} />} />
-      <StatCard index={2} icon={Trophy} label="Won" value={<AnimatedNumber value={wonValue} format={formatCompactMoney} />} />
-    </div>
-  );
-}
+import { Button, ErrorState, LoadingState, PageHeader, StatCard } from "@/components/ui";
 
 export function PipelineScreen() {
-  const { data, role, moveToNextStage } = useCrm();
+  const { role } = useSession();
+  const { data: deals, error } = useDeals();
+  const { nameOf, staff } = useStaffNames();
   const [savedFilters, setFilters] = useState<PipelineFilters>(EMPTY_FILTERS);
   const [view, setView] = useState<PipelineView>("BOARD");
 
-  // A sales person only sees their own deals, so the owner filter applies to Manager and MD only.
+  // A sales person only sees their own deals, so the owner filter is for the roles that see everyone's.
   const canFilterByOwner = can(role, "SEE_ALL_DEALS");
-  const filters = canFilterByOwner ? savedFilters : { ...savedFilters, owner: "" };
+  const filters = canFilterByOwner ? savedFilters : { ...savedFilters, ownerId: "" };
 
-  const allCards = useMemo(() => data?.leads.map((lead) => toCard(lead, data.quotes)) ?? [], [data]);
-  const visibleCards = applyFilters(allCards, filters);
+  if (error && !deals) return <ErrorState message={error.message} />;
+  if (!deals) return <LoadingState />;
 
-  if (!data) return <LoadingState />;
-
-  const openDealCount = visibleCards.filter((card) => !isClosedStage(card.lead.stage)).length;
+  const visibleDeals = applyFilters(deals, filters, nameOf);
+  const openCount = visibleDeals.filter((deal) => !isClosedStage(deal.stage)).length;
+  const wonCount = visibleDeals.filter((deal) => deal.stage === "WON").length;
   const clearFilters = () => setFilters({ ...EMPTY_FILTERS, sort: filters.sort });
 
-  const moveDeal = (card: PipelineCard, targetStage: StageId) => {
-    const blockedReason = moveBlockedReason(card, targetStage);
+  const handleMove = (deal: Deal, targetStage: DealStage) => {
+    const blockedReason = moveBlockedReason(deal, targetStage);
     if (blockedReason) return showToast(blockedReason);
-    moveToNextStage(card.lead.id);
-    showToast(`${card.lead.company} moved to ${stageLabel(targetStage)}`);
+    void moveDeal(deal, targetStage);
   };
 
   return (
     <>
-      <PageHeader title="Pipeline" subtitle={`${openDealCount} open deals`}>
+      <PageHeader title="Pipeline" subtitle={`${openCount} open deals`}>
         <ViewToggle view={view} onViewChange={setView} />
       </PageHeader>
 
-      <PipelineStats cards={visibleCards} />
+      <div className="mb-4 grid grid-cols-2 gap-3">
+        <StatCard index={1} icon={Briefcase} label="Open deals" value={<AnimatedNumber value={openCount} />} />
+        <StatCard index={2} icon={Trophy} label="Won" value={<AnimatedNumber value={wonCount} />} />
+      </div>
 
       <PipelineToolbar
         filters={filters}
         onFiltersChange={setFilters}
         onClear={clearFilters}
-        filterOptions={[
-          ...(canFilterByOwner ? [{ key: "owner" as const, placeholder: "All owners", values: distinctValues(allCards, (lead) => lead.owner) }] : []),
-          { key: "product", placeholder: "All products", values: distinctValues(allCards, (lead) => lead.product) },
-        ]}
+        owners={canFilterByOwner ? (staff ?? []).filter((member) => member.role === "sales").map((member) => ({ id: member.id, name: member.full_name })) : []}
       />
 
-      {visibleCards.length === 0 ? (
+      {visibleDeals.length === 0 ? (
         <div className="animate-enter lift panel flex flex-col items-center py-16 text-center">
           <SearchX className="size-6 text-neutral-400" />
-          <p className="mt-3 font-medium">No deals match these filters</p>
-          <p className="mt-1 text-sm text-neutral-500">Try a different search or clear the filters.</p>
-          <Button variant="secondary" className="mt-5" onClick={clearFilters}>
-            Clear filters
-          </Button>
+          <p className="mt-3 font-medium">No deals</p>
+          {deals.length > 0 && (
+            <Button variant="secondary" className="mt-5" onClick={clearFilters}>
+              Clear filters
+            </Button>
+          )}
         </div>
       ) : view === "BOARD" ? (
-        <KanbanBoard cards={visibleCards} onMove={moveDeal} />
+        <KanbanBoard deals={visibleDeals} ownerName={nameOf} onMove={handleMove} />
       ) : (
-        <PipelineTable cards={visibleCards} />
+        <PipelineTable deals={visibleDeals} ownerName={nameOf} />
       )}
     </>
   );

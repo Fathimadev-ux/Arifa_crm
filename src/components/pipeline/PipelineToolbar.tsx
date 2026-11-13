@@ -6,16 +6,10 @@ import { SegmentedControl } from "@/components/ui";
 
 export type PipelineView = "BOARD" | "TABLE";
 
-interface FilterOption {
-  key: "owner" | "product";
-  placeholder: string;
-  values: string[];
-}
-
 const SORT_LABEL: Record<PipelineSort, string> = {
   DEFAULT: "Sort: Default",
-  VALUE: "Sort: Highest value",
   DUE: "Sort: Due soonest",
+  UPDATED: "Sort: Recently updated",
 };
 
 const VIEWS = [
@@ -27,13 +21,14 @@ const CONTROL = "glass h-10 rounded-full text-sm shadow-sm transition-[backgroun
 
 interface PipelineToolbarProps {
   filters: PipelineFilters;
-  filterOptions: FilterOption[];
+  /** Salespeople to filter by; empty hides the filter. */
+  owners: { id: string; name: string }[];
   onFiltersChange: (filters: PipelineFilters) => void;
   onClear: () => void;
 }
 
 /** One row of controls that scopes the stats, the board and the table together. */
-export function PipelineToolbar({ filters, filterOptions, onFiltersChange, onClear }: PipelineToolbarProps) {
+export function PipelineToolbar({ filters, owners, onFiltersChange, onClear }: PipelineToolbarProps) {
   const update = (patch: Partial<PipelineFilters>) => onFiltersChange({ ...filters, ...patch });
 
   return (
@@ -49,22 +44,21 @@ export function PipelineToolbar({ filters, filterOptions, onFiltersChange, onCle
         />
       </label>
 
-      {filterOptions.map((option) => (
+      {owners.length > 0 && (
         <select
-          key={option.key}
-          value={filters[option.key]}
-          onChange={(event) => update({ [option.key]: event.target.value })}
-          aria-label={option.placeholder}
-          className={`${CONTROL} min-w-0 flex-1 px-4 sm:flex-none ${filters[option.key] ? "border-black font-medium" : "text-neutral-600"}`}
+          value={filters.ownerId}
+          onChange={(event) => update({ ownerId: event.target.value })}
+          aria-label="Owner"
+          className={`${CONTROL} min-w-0 flex-1 px-4 sm:flex-none ${filters.ownerId ? "border-black font-medium" : "text-neutral-600"}`}
         >
-          <option value="">{option.placeholder}</option>
-          {option.values.map((value) => (
-            <option key={value} value={value}>
-              {value}
+          <option value="">All owners</option>
+          {owners.map((owner) => (
+            <option key={owner.id} value={owner.id}>
+              {owner.name}
             </option>
           ))}
         </select>
-      ))}
+      )}
 
       <select value={filters.sort} onChange={(event) => update({ sort: event.target.value as PipelineSort })} aria-label="Sort deals" className={`${CONTROL} min-w-0 flex-1 px-4 text-neutral-600 sm:flex-none`}>
         {Object.entries(SORT_LABEL).map(([sort, label]) => (

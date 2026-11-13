@@ -5,10 +5,9 @@ import { AnimatePresence, motion } from "motion/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useSyncExternalStore, type KeyboardEvent } from "react";
 import { stageLabel } from "@/config/stages";
-import { formatCount } from "@/lib/format";
-import { useCrm } from "@/store/crm-store";
+import { useDeals } from "@/lib/api/crm";
 
-const LEAD_RESULT_LIMIT = 8;
+const DEAL_RESULT_LIMIT = 8;
 
 const PAGES = [
   { title: "Today", subtitle: "Page", href: "/" },
@@ -40,23 +39,18 @@ function subscribe(notify: () => void) {
 }
 
 function PaletteDialog() {
-  const { data } = useCrm();
+  const { data: deals } = useDeals();
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
 
   const needle = query.trim().toLowerCase();
   const pageResults: SearchResult[] = PAGES.filter((page) => page.title.toLowerCase().includes(needle)).map((page) => ({ key: page.href, ...page }));
-  const leadResults: SearchResult[] = (data?.leads ?? [])
-    .filter((lead) => `${lead.company} ${lead.contactName} ${lead.product} ${lead.location} ${lead.id}`.toLowerCase().includes(needle))
-    .slice(0, LEAD_RESULT_LIMIT)
-    .map((lead) => ({
-      key: lead.id,
-      title: lead.company,
-      subtitle: `${stageLabel(lead.stage)} · ${lead.product} · ${formatCount(lead.quantity)} pcs`,
-      href: `/leads/${lead.id}`,
-    }));
-  const results = [...leadResults, ...pageResults];
+  const dealResults: SearchResult[] = (deals ?? [])
+    .filter((deal) => deal.number.toLowerCase().includes(needle))
+    .slice(0, DEAL_RESULT_LIMIT)
+    .map((deal) => ({ key: deal.id, title: deal.number, subtitle: stageLabel(deal.stage), href: `/deals/${deal.id}` }));
+  const results = [...dealResults, ...pageResults];
   const selectedIndex = Math.min(activeIndex, results.length - 1);
 
   const openResult = (result: SearchResult | undefined) => {
@@ -105,7 +99,7 @@ function PaletteDialog() {
               setActiveIndex(0);
             }}
             onKeyDown={handleKeyDown}
-            placeholder="Search leads, companies, products…"
+            placeholder="Search deals and pages…"
             className="h-14 flex-1 bg-transparent text-[15px] outline-none placeholder:text-neutral-400"
           />
           <kbd className="rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] text-neutral-500">Esc</kbd>

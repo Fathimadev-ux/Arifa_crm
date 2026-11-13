@@ -8,7 +8,7 @@ import { ProfileMenu } from "@/components/ProfileMenu";
 
 const NAV_ITEMS = [
   { href: "/", label: "Today", icon: LayoutDashboard, matches: [] },
-  { href: "/pipeline", label: "Pipeline", icon: SquareKanban, matches: ["/pipeline", "/leads"] },
+  { href: "/pipeline", label: "Pipeline", icon: SquareKanban, matches: ["/pipeline", "/deals"] },
 ];
 
 function NavLinks({ activePath }: { activePath: string | null }) {
@@ -43,7 +43,7 @@ export function Sidebar() {
         <span className="hidden text-base font-semibold tracking-tight sm:inline">Arifaa</span>
       </Link>
       <div className="md:mt-12 md:flex-1">
-        {/* Lead pages are created at runtime, so reading the URL waits inside Suspense. */}
+        {/* Deal pages are created at runtime, so reading the URL waits inside Suspense. */}
         <Suspense fallback={<NavLinks activePath={null} />}>
           <ActiveNavLinks />
         </Suspense>
