@@ -4,10 +4,16 @@ import { useState } from "react";
 import { can } from "@/config/roles";
 import { isClosedStage } from "@/config/stages";
 import { type DealDetail, type QuoteDecision, type QuoteVersion, decideApproval, findOpenApproval, requestQuote, useInbox, useOpenApprovals, useQuotes } from "@/lib/api/crm";
+import { reviseQuote } from "@/lib/api/deal-work";
 import { formatCount, formatDate, formatMoney, formatRelative, humanize } from "@/lib/format";
 import { useNow } from "@/hooks/useNow";
 import { useSession } from "@/store/session";
+import { ManualQuoteForm } from "@/components/quote/ManualQuoteForm";
+import { QuoteCompare } from "@/components/quote/QuoteCompare";
+import { QuoteEditForm } from "@/components/quote/QuoteEditForm";
 import { Button, DetailList, Section } from "@/components/ui";
+
+type Mode = "VIEW" | "REVISE" | "MANUAL";
 
 /** Approve, ask for a correction or reject, with an optional note. The backend checks MFA and whose deal it is. */
 function ApprovalActions({ approval, dealId }: { approval: { id: string; dueAt: string | null }; dealId: string }) {
@@ -77,6 +83,18 @@ export function QuotePanel({ deal }: { deal: DealDetail }) {
   const { data: quotes } = useQuotes(deal.id);
   const { data: approvals } = useOpenApprovals(can(role, "LIST_APPROVALS"));
   const { data: inbox } = useInbox();
+  const [mode, setMode] = useState<Mode>("VIEW");
+  const [compareId, setCompareId] = useState<string | null>(null);
+  const canQuote = !isClosedStage(deal.stage);
+  const requirement = deal.requirements[0];
+  const manualForm = (
+    <ManualQuoteForm
+      dealId={deal.id}
+      currency={deal.currency}
+      firstLine={requirement ? { description: requirement.product_text ?? "", quantity: requirement.quantity ?? "" } : undefined}
+      onClose={() => setMode("VIEW")}
+    />
+  );
 
   if (!quotes) {
     return (
@@ -90,15 +108,27 @@ export function QuotePanel({ deal }: { deal: DealDetail }) {
   if (!currentQuote) {
     return (
       <Section title="Quote">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm text-neutral-500">No quote yet.</p>
-          {!isClosedStage(deal.stage) && <Button onClick={() => void requestQuote(deal.id)}>Request quote</Button>}
-        </div>
+        {mode === "MANUAL" ? (
+          manualForm
+        ) : (
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-neutral-500">No quote yet.</p>
+            {canQuote && (
+              <div className="flex flex-wrap gap-2">
+                <Button variant="secondary" onClick={() => setMode("MANUAL")}>
+                  Manual quote
+                </Button>
+                <Button onClick={() => void requestQuote(deal.id)}>Request quote</Button>
+              </div>
+            )}
+          </div>
+        )}
       </Section>
     );
   }
 
   const openApproval = can(role, "APPROVE_QUOTES") ? findOpenApproval(currentQuote, deal.id, approvals, inbox) : null;
+  const comparedQuote = olderQuotes.find((quote) => quote.id === compareId);
 
   return (
     <Section title="Quote">
@@ -128,20 +158,44 @@ export function QuotePanel({ deal }: { deal: DealDetail }) {
         <p className="mt-4 text-sm text-neutral-600">{currentQuote.change_summary ?? currentQuote.approver_summary}</p>
       )}
 
-      {openApproval && <ApprovalActions approval={openApproval} dealId={deal.id} />}
+      {openApproval && mode === "VIEW" && <ApprovalActions approval={openApproval} dealId={deal.id} />}
+
+      {canQuote && mode === "VIEW" && (
+        <div className="mt-5 flex flex-wrap gap-2">
+          <Button variant="secondary" onClick={() => setMode("REVISE")}>
+            Revise
+          </Button>
+          <Button variant="secondary" onClick={() => setMode("MANUAL")}>
+            Manual quote
+          </Button>
+        </div>
+      )}
+      {mode === "REVISE" && (
+        <div className="mt-5">
+          <QuoteEditForm version={currentQuote} title={`Revise version ${currentQuote.version_no}`} onSubmit={(edits) => reviseQuote(deal.id, edits)} onCancel={() => setMode("VIEW")} />
+        </div>
+      )}
+      {mode === "MANUAL" && <div className="mt-5">{manualForm}</div>}
 
       {olderQuotes.length > 0 && (
         <ul className="mt-5 space-y-1 border-t border-dashed border-neutral-200 pt-4 text-xs text-neutral-500">
           {olderQuotes.map((quote) => (
-            <li key={quote.id} className="-mx-2 flex justify-between rounded-full px-2 py-1 transition-colors hover:bg-black/[0.04] hover:text-black">
-              <span>
-                v{quote.version_no} · {formatMoney(quote.total, quote.currency)}
-              </span>
-              <span>{humanize(quote.status)}</span>
+            <li key={quote.id}>
+              <button
+                onClick={() => setCompareId(compareId === quote.id ? null : quote.id)}
+                aria-pressed={compareId === quote.id}
+                className={`-mx-2 flex w-[calc(100%+1rem)] justify-between rounded-full px-2 py-1 text-left transition-colors hover:bg-black/[0.04] hover:text-black ${compareId === quote.id ? "bg-black/[0.06] text-black" : ""}`}
+              >
+                <span>
+                  v{quote.version_no} · {formatMoney(quote.total, quote.currency)}
+                </span>
+                <span>{humanize(quote.status)}</span>
+              </button>
             </li>
           ))}
         </ul>
       )}
+      {comparedQuote && <QuoteCompare older={comparedQuote} newer={currentQuote} onClose={() => setCompareId(null)} />}
     </Section>
   );
 }

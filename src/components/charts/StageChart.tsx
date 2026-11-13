@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "motion/react";
+import { EASE_SMOOTH, GROW_DURATION, STAGGER_STEP } from "@/config/motion";
 
 export interface StageCount {
   label: string;
@@ -27,8 +28,8 @@ export function StageChart({ stages }: { stages: StageCount[] }) {
                 <motion.div
                   initial={{ scaleX: 0 }}
                   animate={{ scaleX: 1 }}
-                  transition={{ duration: 0.7, delay: 0.2 + index * 0.06, ease: [0.2, 0.7, 0.2, 1] }}
-                  className="h-3 origin-left rounded-full bg-white transition-opacity duration-200 group-hover/bars:opacity-35 group-hover:opacity-100! group-focus-visible:opacity-100!"
+                  transition={{ duration: GROW_DURATION, delay: 0.2 + index * STAGGER_STEP, ease: EASE_SMOOTH }}
+                  className="h-3 origin-left rounded-full bg-white transition-opacity duration-500 group-hover/bars:opacity-35 group-hover:opacity-100! group-focus-visible:opacity-100!"
                   style={{ width: `${(stage.count / maxCount) * 78}%` }}
                 />
               )}

@@ -36,7 +36,7 @@ async function loadAllDeals(): Promise<Deal[]> {
   return deals;
 }
 
-const dealPath = (id: string) => ({ params: { path: { deal_id: id } } });
+export const dealPath = (id: string) => ({ params: { path: { deal_id: id } } });
 
 export const useDeals = () => useApi(DEALS, loadAllDeals);
 
@@ -67,7 +67,7 @@ export function findOpenApproval(version: QuoteVersion, dealId: string, approval
 }
 
 /** Runs a change, toasts the outcome and reloads the affected reads. A 409 (changed by someone else) reloads too. */
-async function runAction<T>(call: () => Promise<T>, success: string, refresh: string[]): Promise<T | undefined> {
+export async function runAction<T>(call: () => Promise<T>, success: string, refresh: string[]): Promise<T | undefined> {
   try {
     const result = await call();
     showToast(success);
@@ -80,14 +80,22 @@ async function runAction<T>(call: () => Promise<T>, success: string, refresh: st
   }
 }
 
-const afterDealChange = (id: string) => [DEALS, dealKey(id), INBOX];
+export const afterDealChange = (id: string) => [DEALS, dealKey(id), INBOX];
+
+export interface MoveDetails {
+  lost?: { reason: LostReason; note: string };
+  /** §15.1: every payment detail is optional. */
+  payment?: Schemas["PaymentIn"];
+  won?: Schemas["WonIn"];
+}
 
 /** PAYMENT and WON have their own steps in the API (§15); every other move goes through /stage. */
-export function moveDeal(deal: Deal, to: DealStage, lost?: { reason: LostReason; note: string }) {
+export function moveDeal(deal: Deal, to: DealStage, details?: MoveDetails) {
   return runAction(
     async () => {
-      if (to === "PAYMENT") return unwrap(await api.POST("/v1/deals/{deal_id}/payments", { ...dealPath(deal.id), body: {} }));
-      if (to === "WON") return unwrap(await api.POST("/v1/deals/{deal_id}/won", { ...dealPath(deal.id), body: {} }));
+      if (to === "PAYMENT") return unwrap(await api.POST("/v1/deals/{deal_id}/payments", { ...dealPath(deal.id), body: details?.payment ?? {} }));
+      if (to === "WON") return unwrap(await api.POST("/v1/deals/{deal_id}/won", { ...dealPath(deal.id), body: details?.won ?? {} }));
+      const lost = details?.lost;
       const body = { to, expected_version: deal.version, lost_reason: lost?.reason, lost_note: lost?.note || null };
       return unwrap(await api.POST("/v1/deals/{deal_id}/stage", { ...dealPath(deal.id), body }));
     },

@@ -9,6 +9,8 @@ type QuoteVersion = Schemas["QuoteVersionOut"];
 type TimelineEvent = Schemas["TimelineOut"];
 type Approval = Schemas["ApprovalOut"];
 type StaffMember = Schemas["UserAdminOut"];
+type ChangeRequest = Schemas["ChangeRequestOut"];
+type Order = Schemas["OrderRow"];
 
 const HOUR = 3_600_000;
 const DAY = 86_400_000;
@@ -106,17 +108,27 @@ export const demoId = (kind: "deal" | "quote" | "approval" | "contact", n: numbe
 const toIso = (ms: number) => new Date(ms).toISOString();
 const toDate = (ms: number) => toIso(ms).slice(0, 10);
 
-/** One quote version priced from the list (the backend builds every quote; the demo copies that). */
-export function buildQuoteVersion(dealNumber: number, version: number, product: string, quantity: number, unitPrice: number, status: string, createdMs: number): QuoteVersion {
-  const subtotal = unitPrice * quantity;
+export interface QuoteLineDraft {
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  unit?: string;
+}
+
+/** One quote version (the backend builds every quote; the demo copies that): priced from the list, or by hand. */
+export function buildQuoteVersion(dealNumber: number, version: number, lines: QuoteLineDraft[], status: string, createdMs: number, kind = "price_list"): QuoteVersion {
+  const subtotal = lines.reduce((sum, line) => sum + line.unitPrice * line.quantity, 0);
   const vat = (subtotal * VAT_RATE) / 100;
   return {
-    id: demoId("quote", dealNumber, version), quote_id: demoId("quote", dealNumber), version_no: version, kind: "price_list", status, currency: "INR",
+    id: demoId("quote", dealNumber, version), quote_id: demoId("quote", dealNumber), version_no: version, kind, status, currency: "INR",
     subtotal: subtotal.toFixed(2), vat_rate: String(VAT_RATE), vat_amount: vat.toFixed(2), total: (subtotal + vat).toFixed(2), total_aed: ((subtotal + vat) * INR_TO_AED).toFixed(2),
     incoterm: "EXW", validity_days: 15, valid_until: toDate(createdMs + 15 * DAY), clauses: [], approver_summary: null,
     delivery_time_text: "10–12 days", delivery_place: null, payment_terms_text: "50% advance, balance before dispatch",
     pdf_s3_key: null, created_at: toIso(createdMs),
-    lines: [{ line_no: 1, description: product, quantity: String(quantity), unit: "pcs", unit_price: unitPrice.toFixed(2), line_total: subtotal.toFixed(2) }],
+    lines: lines.map((line, index) => ({
+      line_no: index + 1, description: line.description, quantity: String(line.quantity), unit: line.unit ?? "pcs",
+      unit_price: line.unitPrice.toFixed(2), line_total: (line.unitPrice * line.quantity).toFixed(2),
+    })),
   };
 }
 
@@ -137,12 +149,14 @@ export interface DemoState {
   timeline: Record<string, TimelineEvent[]>;
   approvals: Approval[];
   companyByDeal: Record<string, string>;
+  changeRequests: ChangeRequest[];
+  orders: Order[];
   /** The stage a lost deal was lost from, for Reopen. */
   lostFrom: Record<string, DealStage>;
 }
 
 export function createDemoState(now: number): DemoState {
-  const state: DemoState = { deals: [], quotes: {}, timeline: {}, approvals: [], companyByDeal: {}, lostFrom: {} };
+  const state: DemoState = { deals: [], quotes: {}, timeline: {}, approvals: [], companyByDeal: {}, lostFrom: {}, changeRequests: [], orders: [] };
   let eventId = 1;
 
   for (const seed of SEEDS) {
@@ -168,7 +182,7 @@ export function createDemoState(now: number): DemoState {
     });
 
     const versions = (seed.quotes ?? []).map((quote, index) =>
-      buildQuoteVersion(seed.number, index + 1, seed.product, seed.quantity, quote.unitPrice ?? unitPriceOf(seed.product), quote.status, now - quote.ageHours * HOUR),
+      buildQuoteVersion(seed.number, index + 1, [{ description: seed.product, quantity: seed.quantity, unitPrice: quote.unitPrice ?? unitPriceOf(seed.product) }], quote.status, now - quote.ageHours * HOUR),
     );
     for (const version of versions) {
       if (version.status === "pending_approval") state.approvals.push(buildApproval(version, seed.number, ownerId, new Date(version.created_at).getTime()));
@@ -184,5 +198,37 @@ export function createDemoState(now: number): DemoState {
       }))
       .reverse();
   }
+
+  state.changeRequests = createChangeRequests(state, now);
+  state.orders = [
+    {
+      id: demoId("deal", 1009, 9), number: "O-1009", deal_id: demoId("deal", 1009), status: "in_production", production_started_on: toDate(now - 3 * DAY),
+      ready_on: null, shipped_on: null, delivered_on: null, tracking_ref: null, created_at: toIso(now - 4 * DAY),
+    },
+  ];
   return state;
+}
+
+/** Two buyers asking to change a quote (§13): one waiting, one already being worked on and past its SLA. */
+function createChangeRequests(state: DemoState, now: number): ChangeRequest[] {
+  const request = (dealNumber: number, patch: Partial<ChangeRequest>): ChangeRequest => {
+    const dealId = demoId("deal", dealNumber);
+    return {
+      id: demoId("approval", dealNumber, 900), deal_id: dealId, quote_version_id: state.quotes[dealId][0]?.id ?? null, type: "change", buyer_text: "", buyer_text_en: null, fields: [],
+      ai_notes: null, status: "open", assigned_to: state.deals.find((deal) => deal.id === dealId)?.owner_user_id ?? null, sla_due_at: toIso(now + 3 * HOUR), escalated_at: null,
+      resolved_version_id: null, decline_reason: null, created_at: toIso(now - HOUR), ...patch,
+    };
+  };
+  return [
+    request(1045, {
+      type: "price_and_quantity", buyer_text: "Can you do ₹8.50 per piece if we take 60,000?",
+      fields: [{ field: "quantity", current: "50,000", requested: "60,000" }, { field: "unit_price", current: "₹8.70", requested: "₹8.50" }],
+      ai_notes: "₹8.50 is below the minimum for this quantity: the manager decides.",
+    }),
+    request(1005, {
+      type: "delivery", buyer_text: "இந்த மாதம் 25ஆம் தேதிக்குள் டெலிவரி கிடைக்குமா?", buyer_text_en: "Can we get delivery by the 25th of this month?",
+      fields: [{ field: "delivery_time", current: "10–12 days", requested: "By the 25th" }], status: "in_progress",
+      sla_due_at: toIso(now - HOUR), created_at: toIso(now - 5 * HOUR),
+    }),
+  ];
 }

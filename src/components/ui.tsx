@@ -46,7 +46,7 @@ export function StatCard({ label, value, index = 0, icon: Icon }: StatCardProps)
   return (
     <div className="group animate-enter lift panel flex items-center gap-3 p-4" style={enterDelay(index)}>
       {Icon && (
-        <span className="hidden size-10 shrink-0 place-items-center rounded-full border border-neutral-200 transition-all sm:grid duration-300 group-hover:rotate-[-8deg] group-hover:border-black group-hover:bg-black group-hover:text-white">
+        <span className="hidden size-10 shrink-0 place-items-center rounded-full border border-neutral-200 transition-all sm:grid duration-500 group-hover:rotate-[-8deg] group-hover:border-black group-hover:bg-black group-hover:text-white">
           <Icon className="size-4" />
         </span>
       )}
@@ -101,7 +101,7 @@ export function Avatar({ name, size = "sm", inverted = false }: { name: string; 
   const sizeStyle = AVATAR_SIZE[size];
   const colourStyle = inverted ? "bg-black text-white ring-2 ring-white" : "bg-neutral-200 text-neutral-800 ring-2 ring-white";
   return (
-    <span className={`inline-grid shrink-0 place-items-center rounded-full font-semibold transition-transform duration-200 hover:scale-110 ${sizeStyle} ${colourStyle}`} title={name}>
+    <span className={`inline-grid shrink-0 place-items-center rounded-full font-semibold transition-transform duration-500 hover:scale-110 ${sizeStyle} ${colourStyle}`} title={name}>
       {initialsOf(name)}
     </span>
   );

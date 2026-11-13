@@ -2,6 +2,7 @@
 
 import { animate, useMotionValue, useMotionValueEvent } from "motion/react";
 import { useEffect, useState } from "react";
+import { EASE_SMOOTH, GROW_DURATION } from "@/config/motion";
 
 /** Counts smoothly from the previous value to the new one. */
 export function AnimatedNumber({ value, format = String }: { value: number; format?: (value: number) => string }) {
@@ -11,7 +12,7 @@ export function AnimatedNumber({ value, format = String }: { value: number; form
   useMotionValueEvent(motionValue, "change", setDisplayValue);
 
   useEffect(() => {
-    const controls = animate(motionValue, value, { duration: 0.9, ease: [0.2, 0.7, 0.2, 1] });
+    const controls = animate(motionValue, value, { duration: GROW_DURATION + 0.2, ease: EASE_SMOOTH });
     return () => controls.stop();
   }, [motionValue, value]);
 

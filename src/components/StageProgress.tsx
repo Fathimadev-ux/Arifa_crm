@@ -15,7 +15,7 @@ export function StageProgress({ stage }: { stage: DealStage }) {
         const isCurrent = !isLost && index === currentIndex;
         return (
           <li key={item.id} aria-current={isCurrent ? "step" : undefined} className="group cursor-default">
-            <div className={`h-1.5 rounded-full transition-all duration-300 group-hover:scale-y-150 ${isDone ? "bg-black" : "bg-neutral-200 group-hover:bg-neutral-400"}`} />
+            <div className={`h-1.5 rounded-full transition-all duration-500 group-hover:scale-y-150 ${isDone ? "bg-black" : "bg-neutral-200 group-hover:bg-neutral-400"}`} />
             <p className={`mt-2 hidden truncate text-[11px] transition-colors group-hover:text-black sm:block ${isCurrent ? "font-semibold text-black" : isDone ? "text-neutral-600" : "text-neutral-400"}`}>
               {item.label}
             </p>

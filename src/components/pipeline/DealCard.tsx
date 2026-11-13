@@ -10,8 +10,7 @@ import type { Deal } from "@/lib/api/crm";
 import { formatRelative } from "@/lib/format";
 import { useNow } from "@/hooks/useNow";
 import { Avatar, DealFlag, enterDelay } from "@/components/ui";
-
-const CARD_SPRING = { type: "spring", stiffness: 380, damping: 34 } as const;
+import { LAYOUT_SPRING } from "@/config/motion";
 
 interface DealCardProps {
   deal: Deal;
@@ -33,7 +32,7 @@ export function DealCard({ deal, ownerName, index, isDragging, quickMoveStage, o
     <motion.div
       layout
       layoutId={deal.id}
-      transition={CARD_SPRING}
+      transition={LAYOUT_SPRING}
       animate={{ opacity: isDragging ? 0.4 : 1, scale: isDragging ? 0.97 : 1 }}
       className="group relative"
     >
@@ -46,7 +45,7 @@ export function DealCard({ deal, ownerName, index, isDragging, quickMoveStage, o
         }}
         onDragEnd={onDragEnd}
         style={enterDelay(index)}
-        className="animate-enter block cursor-grab rounded-2xl bg-white/70 p-4 shadow-sm backdrop-blur-md transition-[box-shadow,translate] duration-200 group-hover:-translate-y-0.5 group-hover:shadow-lg active:cursor-grabbing"
+        className="animate-enter block cursor-grab rounded-2xl bg-white/70 p-4 shadow-sm backdrop-blur-md transition-[box-shadow,translate] duration-500 group-hover:-translate-y-0.5 group-hover:shadow-lg active:cursor-grabbing"
       >
         <div className="flex items-start justify-between gap-2">
           <p className="text-sm leading-snug font-semibold">{deal.number}</p>

@@ -6,12 +6,22 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, useSyncExternalStore, type KeyboardEvent } from "react";
 import { stageLabel } from "@/config/stages";
 import { useDeals } from "@/lib/api/crm";
+import { FADE, POPOVER_SPRING } from "@/config/motion";
 
 const DEAL_RESULT_LIMIT = 8;
 
 const PAGES = [
   { title: "Today", subtitle: "Page", href: "/" },
+  { title: "Inbox", subtitle: "Page", href: "/inbox" },
   { title: "Pipeline", subtitle: "Page", href: "/pipeline" },
+  { title: "Requests", subtitle: "Page", href: "/requests" },
+  { title: "Contacts", subtitle: "Page", href: "/contacts" },
+  { title: "Orders", subtitle: "Page", href: "/orders" },
+  { title: "Products", subtitle: "Page", href: "/products" },
+  { title: "Stock", subtitle: "Page", href: "/stock" },
+  { title: "Dashboards", subtitle: "Page", href: "/dashboards" },
+  { title: "Settings", subtitle: "Page", href: "/settings" },
+  { title: "My account", subtitle: "Page", href: "/account" },
 ];
 
 interface SearchResult {
@@ -74,7 +84,7 @@ function PaletteDialog() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.15 }}
+      transition={FADE}
       onMouseDown={() => setPaletteOpen(false)}
     >
       <motion.div
@@ -84,7 +94,7 @@ function PaletteDialog() {
         initial={{ opacity: 0, y: -8, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: -8, scale: 0.98 }}
-        transition={{ type: "spring", stiffness: 500, damping: 36 }}
+        transition={POPOVER_SPRING}
         onMouseDown={(event) => event.stopPropagation()}
       >
         <label className="flex items-center gap-3 border-b border-neutral-100 pr-4 pl-3">

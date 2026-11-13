@@ -53,3 +53,8 @@ export function humanize(code: string): string {
   const words = code.replace(/[_-]+/g, " ").trim().toLowerCase();
   return words.charAt(0).toUpperCase() + words.slice(1);
 }
+
+const CHANNEL_LABEL: Record<string, string> = { whatsapp: "WhatsApp", email: "Email", phone: "Phone", web: "Website" };
+
+/** A channel code as people write it ("whatsapp" → "WhatsApp"). */
+export const channelLabel = (channel: string) => CHANNEL_LABEL[channel] ?? humanize(channel);

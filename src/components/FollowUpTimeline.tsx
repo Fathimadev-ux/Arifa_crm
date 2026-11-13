@@ -6,6 +6,7 @@ import { isClosedStage } from "@/config/stages";
 import type { Deal } from "@/lib/api/crm";
 import { formatHour } from "@/lib/format";
 import { Avatar, enterDelay } from "@/components/ui";
+import { EASE_SMOOTH, STAGGER_STEP } from "@/config/motion";
 
 const HOUR = 3_600_000;
 const HOURS_BEFORE_NOW = 6;
@@ -73,12 +74,12 @@ export function FollowUpTimeline({ deals, ownerName, now, index }: FollowUpTimel
                     style={{ left: `${position}%`, translate: `-${position}% -50%` }}
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.4, delay: 0.2 + rowIndex * 0.06 }}
+                    transition={{ duration: 0.7, delay: 0.2 + rowIndex * STAGGER_STEP, ease: EASE_SMOOTH }}
                   >
                     <Link
                       href={`/deals/${deal.id}`}
                       title={`${deal.number} · ${owner}`}
-                      className={`flex items-center gap-2 rounded-full py-1 pr-1 pl-3 text-[11px] font-medium whitespace-nowrap shadow-md transition-all duration-200 hover:scale-[1.06] hover:shadow-lg ${isOverdue ? "bg-white text-black ring-1 ring-black" : "bg-black text-white"}`}
+                      className={`flex items-center gap-2 rounded-full py-1 pr-1 pl-3 text-[11px] font-medium whitespace-nowrap shadow-md transition-all duration-500 hover:scale-[1.06] hover:shadow-lg ${isOverdue ? "bg-white text-black ring-1 ring-black" : "bg-black text-white"}`}
                     >
                       {isOverdue ? `Overdue · ${formatHour(dueMs)}` : formatHour(dueMs)}
                       <Avatar name={owner} />

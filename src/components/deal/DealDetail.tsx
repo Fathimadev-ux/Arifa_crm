@@ -3,14 +3,31 @@
 import { ArrowLeft, CalendarDays, Clock, Package, UserRound } from "lucide-react";
 import Link from "next/link";
 import { lostReasonLabel } from "@/config/stages";
+import { useChangeRequests } from "@/lib/api/change-requests";
 import { type DealDetail as Deal, type TimelineEvent, useDeal, useTimeline } from "@/lib/api/crm";
-import { formatCount, formatDate, formatDateTime, formatRelative, humanize } from "@/lib/format";
+import { channelLabel, formatCount, formatDate, formatDateTime, formatRelative, humanize } from "@/lib/format";
 import { useNow } from "@/hooks/useNow";
 import { useStaffNames } from "@/hooks/useStaffNames";
+import { BuyerConversation } from "@/components/deal/BuyerConversation";
 import { AiCard, OwnerValue, StageActions } from "@/components/deal/DealActions";
+import { DealOrder } from "@/components/deal/DealOrder";
 import { QuotePanel } from "@/components/deal/QuotePanel";
+import { RequestCard } from "@/components/requests/RequestCard";
 import { StageProgress } from "@/components/StageProgress";
 import { Avatar, DealFlag, DetailList, ErrorState, LoadingState, Section, StageTag, StatCard, enterDelay } from "@/components/ui";
+
+/** The buyer's open change requests on this deal (§13), each with its own actions. */
+function DealRequests({ dealId }: { dealId: string }) {
+  const { data: requests } = useChangeRequests("open", dealId);
+  if (!requests?.length) return null;
+  return (
+    <>
+      {requests.map((request, index) => (
+        <RequestCard key={request.id} request={request} index={index} />
+      ))}
+    </>
+  );
+}
 
 function ActivityTimeline({ deal }: { deal: Deal }) {
   const { data: events } = useTimeline(deal.id);
@@ -32,7 +49,7 @@ function ActivityTimeline({ deal }: { deal: Deal }) {
             <span className={`absolute top-2.5 left-2 size-[7px] rounded-full transition-transform group-hover:scale-150 ${index === 0 ? "bg-black" : "bg-neutral-300"}`} />
             <p className="text-sm font-medium">
               {actorOf(event)}
-              {event.channel && <span className="font-normal text-neutral-400"> · {humanize(event.channel)}</span>}
+              {event.channel && <span className="font-normal text-neutral-400"> · {channelLabel(event.channel)}</span>}
             </p>
             <p className="mt-0.5 text-sm text-neutral-600">{event.summary}</p>
             <p className="mt-1 text-xs text-neutral-400">{formatDateTime(event.at)}</p>
@@ -67,6 +84,7 @@ function Requirements({ deal }: { deal: Deal }) {
 
 export function DealDetail({ id }: { id: string }) {
   const { data: deal, error } = useDeal(id);
+  const { nameOf } = useStaffNames();
   const now = useNow();
 
   if (error && !deal) {
@@ -102,6 +120,7 @@ export function DealDetail({ id }: { id: string }) {
               <h1 className="text-4xl font-light tracking-tight md:text-5xl">{title}</h1>
               <StageTag stage={deal.stage} />
               <DealFlag deal={deal} />
+              {deal.taken_over_by && <span className="rounded-full bg-black px-2.5 py-1 text-[10px] font-semibold text-white">Taken over by {nameOf(deal.taken_over_by)}</span>}
             </div>
             <p className="mt-1 text-sm text-neutral-500">{[deal.number, firstRequirement?.product_text].filter(Boolean).join(" · ")}</p>
           </div>
@@ -134,7 +153,9 @@ export function DealDetail({ id }: { id: string }) {
 
       <div className="grid grid-cols-1 gap-4 md:gap-5 lg:grid-cols-3">
         <div className="space-y-4 md:space-y-5 lg:col-span-2">
+          <DealRequests dealId={deal.id} />
           <QuotePanel deal={deal} />
+          <DealOrder deal={deal} />
           <Requirements deal={deal} />
           <Section title="Contact" index={5}>
             <DetailList
@@ -143,7 +164,7 @@ export function DealDetail({ id }: { id: string }) {
                 ["Phone", contact.phone_e164],
                 ["WhatsApp", contact.whatsapp_e164],
                 ["Email", contact.email],
-                ["Prefers", contact.preferred_channel && humanize(contact.preferred_channel)],
+                ["Prefers", contact.preferred_channel && channelLabel(contact.preferred_channel)],
                 ["Language", contact.language],
               ]}
             />
@@ -151,6 +172,7 @@ export function DealDetail({ id }: { id: string }) {
         </div>
         <div className="space-y-4 md:space-y-5">
           <AiCard deal={deal} now={now} />
+          <BuyerConversation deal={deal} />
           <ActivityTimeline deal={deal} />
         </div>
       </div>

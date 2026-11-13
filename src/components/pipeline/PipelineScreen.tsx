@@ -11,6 +11,7 @@ import { useStaffNames } from "@/hooks/useStaffNames";
 import { useSession } from "@/store/session";
 import { AnimatedNumber } from "@/components/AnimatedNumber";
 import { showToast } from "@/components/Toaster";
+import { ExportButtons } from "@/components/ExportButtons";
 import { KanbanBoard } from "@/components/pipeline/KanbanBoard";
 import { PipelineTable } from "@/components/pipeline/PipelineTable";
 import { type PipelineView, PipelineToolbar, ViewToggle } from "@/components/pipeline/PipelineToolbar";
@@ -44,7 +45,10 @@ export function PipelineScreen() {
   return (
     <>
       <PageHeader title="Pipeline" subtitle={`${openCount} open deals`}>
-        <ViewToggle view={view} onViewChange={setView} />
+        <div className="flex flex-wrap items-center gap-2">
+          <ExportButtons entity="deals" />
+          <ViewToggle view={view} onViewChange={setView} />
+        </div>
       </PageHeader>
 
       <div className="mb-4 grid grid-cols-2 gap-3">

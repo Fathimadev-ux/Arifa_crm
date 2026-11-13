@@ -46,7 +46,7 @@ export function KanbanBoard({ deals, ownerName, onMove }: KanbanBoardProps) {
               event.preventDefault();
               dropOnStage(stage.id);
             }}
-            className={`flex w-[82vw] shrink-0 snap-start flex-col sm:w-[280px] rounded-[1.75rem] border border-white/60 bg-white/30 p-2.5 backdrop-blur-xl transition-all duration-200 hover:bg-white/45 ${isDimmed ? "opacity-45" : ""} ${
+            className={`flex w-[82vw] shrink-0 snap-start flex-col sm:w-[280px] rounded-[1.75rem] border border-white/60 bg-white/30 p-2.5 backdrop-blur-xl transition-all duration-500 hover:bg-white/45 ${isDimmed ? "opacity-45" : ""} ${
               isAllowedTarget ? `outline-2 outline-dashed outline-black ${hoveredStage === stage.id ? "bg-white" : "bg-white/70"}` : ""
             }`}
           >
