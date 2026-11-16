@@ -5,7 +5,7 @@
  * Also covers a forgotten password and the forced change of a new user's one-time password.
  */
 import { useRouter } from "next/navigation";
-import { type FormEvent, type InputHTMLAttributes, type ReactNode, useState } from "react";
+import { type FormEvent, type InputHTMLAttributes, type ReactNode, useLayoutEffect, useState } from "react";
 import { ApiError, setAccessToken } from "@/lib/api/client";
 import { clearApiCache } from "@/lib/api/use-api";
 import {
@@ -67,6 +67,19 @@ export function LoginScreen() {
   const [message, setMessage] = useState("");
   const [isBusy, setIsBusy] = useState(false);
 
+  // Next keeps this page alive (hidden) after login, so start over when it's hidden: Log out then opens a fresh
+  // "Log in" form instead of the code step, and the password doesn't stay in memory.
+  useLayoutEffect(
+    () => () => {
+      setStep({ name: "SIGN_IN" });
+      setPassword("");
+      setCode("");
+      setNewPassword("");
+      setMessage("");
+    },
+    [],
+  );
+
   const goTo = (next: Step, note = "") => {
     setStep(next);
     setCode("");
@@ -105,9 +118,12 @@ export function LoginScreen() {
 
   const handleSignIn = submit(async () => {
     const challenge = await startLogin(email.trim(), password);
+    // DEMO ONLY: skip the 6-digit code step (the sample data accepts any code). Remove this line and
+    // un-comment the two below when the real backend is connected.
+    signedIn(await verifyAppCode(challenge, "000000"));
     // The authenticator app comes first; the email code is the fallback (and the only way before it is set up).
-    if (challenge.methods.includes("totp")) goTo({ name: "CODE", challenge, method: "totp" });
-    else await askForEmailCode(challenge);
+    // if (challenge.methods.includes("totp")) goTo({ name: "CODE", challenge, method: "totp" });
+    // else await askForEmailCode(challenge);
   });
 
   const handleCode = (challenge: Challenge, method: "totp" | "email") =>
