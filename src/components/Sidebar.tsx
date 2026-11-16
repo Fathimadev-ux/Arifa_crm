@@ -54,7 +54,8 @@ export function Sidebar() {
         <span className="grid size-8 place-items-center rounded-full bg-black text-sm font-bold text-white transition-transform duration-500 group-hover:rotate-[360deg]">A</span>
         <span className="hidden text-base font-semibold tracking-tight md:inline">Arifaa</span>
       </Link>
-      <div className="min-w-0 flex-1 md:mt-8">
+      {/* On short screens the links scroll here, so the person card (with Log out) stays in view. */}
+      <div className="scroll-thin min-w-0 flex-1 md:-mx-1 md:mt-8 md:min-h-0 md:overflow-y-auto md:px-1 md:py-1">
         {/* Deal pages are created at runtime, so reading the URL waits inside Suspense. */}
         <Suspense fallback={<NavLinks activePath={null} />}>
           <ActiveNavLinks />
