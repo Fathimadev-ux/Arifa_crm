@@ -5,7 +5,7 @@ import { useState } from "react";
 import { can } from "@/config/roles";
 import { LOST_REASONS, type LostReason, isClosedStage, nextStageOf, stageLabel } from "@/config/stages";
 import { type DealDetail, moveDeal, reassignDeal, reopenDeal, setAiEnabled } from "@/lib/api/crm";
-import { setTakeover } from "@/lib/api/deal-work";
+import { setSpecialPrice, setTakeover } from "@/lib/api/deal-work";
 import { formatRelative, humanize } from "@/lib/format";
 import { useStaffNames } from "@/hooks/useStaffNames";
 import { useSession } from "@/store/session";
@@ -82,10 +82,31 @@ function WonForm({ deal, onClose }: { deal: DealDetail; onClose: () => void }) {
   );
 }
 
+/** §12 below-minimum alert (manager / MD): approve a special unit price the AI may then state to the buyer. */
+function SpecialPriceForm({ deal, onClose }: { deal: DealDetail; onClose: () => void }) {
+  const [unitPrice, setUnitPrice] = useState("");
+  const [resumeAi, setResumeAi] = useState(true);
+  return (
+    <FormCard
+      title="Approve a special price"
+      submitLabel="Approve price"
+      canSubmit={Number(unitPrice) > 0}
+      onCancel={onClose}
+      onSubmit={() => void setSpecialPrice(deal.id, unitPrice, resumeAi).then((result) => result !== undefined && onClose())}
+    >
+      <p className="text-sm text-neutral-500">It can be below the usual range. The AI may then quote it to the buyer.</p>
+      <TextInput label={`Unit price (${deal.currency})`} type="number" min="0.0001" step="any" autoFocus value={unitPrice} onChange={(event) => setUnitPrice(event.target.value)} />
+      <label className="flex cursor-pointer items-center gap-2 text-sm">
+        <input type="checkbox" checked={resumeAi} onChange={(event) => setResumeAi(event.target.checked)} className="size-4 accent-black" /> Hand the chat back to the AI
+      </label>
+    </FormCard>
+  );
+}
+
 /** Move forward, mark lost (with a reason from the list), or reopen a lost deal (manager / MD). */
 export function StageActions({ deal }: { deal: DealDetail }) {
   const { role } = useSession();
-  const [mode, setMode] = useState<"IDLE" | "LOST" | "REOPEN" | "PAYMENT" | "WON">("IDLE");
+  const [mode, setMode] = useState<"IDLE" | "LOST" | "REOPEN" | "PAYMENT" | "WON" | "OFFER">("IDLE");
   const [lostReason, setLostReason] = useState<LostReason | "">("");
   const [text, setText] = useState("");
 
@@ -121,6 +142,7 @@ export function StageActions({ deal }: { deal: DealDetail }) {
 
   if (mode === "PAYMENT") return <PaymentForm deal={deal} onClose={close} />;
   if (mode === "WON") return <WonForm deal={deal} onClose={close} />;
+  if (mode === "OFFER") return <SpecialPriceForm deal={deal} onClose={close} />;
 
   if (deal.stage === "LOST") {
     return can(role, "REOPEN_DEALS") ? <Button onClick={() => setMode("REOPEN")}>Reopen</Button> : null;
@@ -138,6 +160,11 @@ export function StageActions({ deal }: { deal: DealDetail }) {
       {canTakeOver && (
         <Button variant="secondary" onClick={() => void setTakeover(deal, !deal.taken_over_by)}>
           {deal.taken_over_by ? "Hand back deal" : "Take over deal"}
+        </Button>
+      )}
+      {can(role, "SET_SPECIAL_PRICE") && (
+        <Button variant="secondary" onClick={() => setMode("OFFER")}>
+          Special price
         </Button>
       )}
       <Button variant="secondary" onClick={() => setMode("LOST")}>

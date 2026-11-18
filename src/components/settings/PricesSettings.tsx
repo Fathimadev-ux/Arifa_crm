@@ -52,11 +52,14 @@ function FxOverride({ onClose }: { onClose: () => void }) {
   );
 }
 
+/** §5.4 rates are stored daily by a job (source "auto:…"); a manager's rate for a day is never replaced by it. */
+const fxSourceLabel = (source: string) => (source.startsWith("auto") ? "Automatic" : source === "manual" ? "Entered by manager" : humanize(source));
+
 const FX_COLUMNS: Column<{ currency: string; rate_to_aed: string; as_of: string; source: string }>[] = [
   { label: "Currency", cell: (row) => row.currency, width: "25%" },
   { label: "1 unit in AED", cell: (row) => row.rate_to_aed, width: "25%", alignRight: true },
   { label: "Day", cell: (row) => formatDate(row.as_of), width: "25%" },
-  { label: "Source", cell: (row) => humanize(row.source), width: "25%" },
+  { label: "Source", cell: (row) => fxSourceLabel(row.source), width: "25%" },
 ];
 
 /** Material rates waiting for the manager, how fresh each approved rate is, and the currency rates quotes use. */

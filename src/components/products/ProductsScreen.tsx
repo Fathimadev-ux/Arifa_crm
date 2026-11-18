@@ -1,6 +1,6 @@
 "use client";
 
-import { FileDown, FileUp, History } from "lucide-react";
+import { FileDown, FileSpreadsheet, FileUp, History } from "lucide-react";
 import { useRef, useState } from "react";
 import { can } from "@/config/roles";
 import { type ImportResult, type Product, exportPriceList, importPriceList, usePriceListHistory, useProducts } from "@/lib/api/catalogue";
@@ -11,6 +11,7 @@ import { type Column, DataTable, SearchBox } from "@/components/DataTable";
 import { ExportButtons } from "@/components/ExportButtons";
 import { ChangeHistory } from "@/components/products/ChangeHistory";
 import { ProductPanel } from "@/components/products/ProductPanel";
+import { ProductWorkbook } from "@/components/products/ProductWorkbook";
 import { Button, ErrorState, LoadingState, PageHeader, Section } from "@/components/ui";
 
 const columns: Column<Product>[] = [
@@ -53,6 +54,8 @@ export function ProductsScreen() {
   const fileInput = useRef<HTMLInputElement>(null);
   const { data: history } = usePriceListHistory();
   const canEditPrices = can(role, "EDIT_PRICES");
+  const canUseWorkbook = can(role, "USE_WORKBOOK");
+  const [isWorkbookOpen, setIsWorkbookOpen] = useState(false);
 
   const needle = search.trim().toLowerCase();
   const visible = products?.filter((product) => !needle || `${product.name} ${product.sku} ${product.category_code}`.toLowerCase().includes(needle)) ?? [];
@@ -80,6 +83,11 @@ export function ProductsScreen() {
           <Button variant="secondary" onClick={() => void exportPriceList()}>
             <FileDown className="size-4" /> Price list
           </Button>
+          {canUseWorkbook && (
+            <Button variant="secondary" onClick={() => setIsWorkbookOpen((open) => !open)}>
+              <FileSpreadsheet className="size-4" /> Product workbook
+            </Button>
+          )}
           {canEditPrices && (
             <>
               <input ref={fileInput} type="file" accept=".xlsx" hidden onChange={(event) => void upload(event.target.files?.[0])} />
@@ -91,6 +99,11 @@ export function ProductsScreen() {
         </div>
       </div>
 
+      {isWorkbookOpen && (
+        <div className="mb-4">
+          <ProductWorkbook onClose={() => setIsWorkbookOpen(false)} />
+        </div>
+      )}
       {importResult && <ImportResultNote result={importResult} onClose={() => setImportResult(null)} />}
       {isHistoryOpen && (
         <div className="mb-4">

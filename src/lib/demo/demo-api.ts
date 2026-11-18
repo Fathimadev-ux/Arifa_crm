@@ -6,6 +6,7 @@
 import type { Middleware } from "openapi-fetch";
 import { ROUTES } from "./demo-routes";
 import { ADMIN_ROUTES } from "./demo-routes-admin";
+import { CONTENT_ROUTES } from "./demo-routes-content";
 import { RECORD_ROUTES } from "./demo-routes-records";
 import { type Body, problem } from "./demo-store";
 
@@ -31,7 +32,7 @@ function enterDemoMode() {
 
 // ---------- Answering ----------
 
-const ALL_ROUTES = [...ROUTES, ...RECORD_ROUTES, ...ADMIN_ROUTES];
+const ALL_ROUTES = [...ROUTES, ...RECORD_ROUTES, ...ADMIN_ROUTES, ...CONTENT_ROUTES];
 
 function answer(method: string, url: string, bodyText: string): Response {
   const { pathname, searchParams } = new URL(url);

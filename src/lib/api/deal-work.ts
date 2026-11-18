@@ -63,6 +63,16 @@ export function recordOptOut(dealId: string, optOut: OptOut) {
   return runAction(async () => unwrap(await api.POST("/v1/deals/{deal_id}/opt-out", { ...dealPath(dealId), body: optOut })), "Stop recorded: no more messages to this buyer", afterDealChange(dealId));
 }
 
+/** §12 below-minimum alert (manager / MD): an approved special price the AI may state; optionally hand back to the AI. */
+export function setSpecialPrice(dealId: string, unitPrice: string, resumeAi: boolean) {
+  return runAction(async () => unwrap(await api.POST("/v1/deals/{deal_id}/offer", { ...dealPath(dealId), body: { unit_price: unitPrice, resume_ai: resumeAi } })), "Special price approved", afterQuoteChange(dealId));
+}
+
+/** §14 practical notes: the salesperson shared a personal contact with the buyer. */
+export function markPersonalContactShared(dealId: string) {
+  return runAction(async () => unwrap(await api.POST("/v1/deals/{deal_id}/personal-contact-shared", dealPath(dealId))), "Noted on the deal", [`deal:${dealId}`]);
+}
+
 /** §3: the MD takes the deal over (the salesperson is read-only), or hands it back. */
 export function setTakeover(deal: Deal, takeOver: boolean) {
   return runAction(

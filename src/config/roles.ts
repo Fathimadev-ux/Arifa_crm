@@ -29,7 +29,12 @@ export type Permission =
   | "DECIDE_MATERIAL_PRICES"
   | "MANAGE_USERS"
   | "EDIT_CHANNELS"
-  | "SET_KILL_SWITCH";
+  | "SET_KILL_SWITCH"
+  | "SET_SPECIAL_PRICE"
+  | "USE_WORKBOOK"
+  | "EDIT_COMPANY"
+  | "EDIT_TEXTS"
+  | "EDIT_TEMPLATES";
 
 const PERMISSIONS: Record<Permission, Role[]> = {
   SEE_ALL_DEALS: ["manager", "md", "admin"],
@@ -55,6 +60,12 @@ const PERMISSIONS: Record<Permission, Role[]> = {
   MANAGE_USERS: ["admin"],
   EDIT_CHANNELS: ["admin"],
   SET_KILL_SWITCH: ["admin", "md"],
+  // 18 Nov (§12, §5.1–5.3).
+  SET_SPECIAL_PRICE: ["manager", "md"],
+  USE_WORKBOOK: ["manager", "md", "admin"],
+  EDIT_COMPANY: ["manager", "md", "admin"],
+  EDIT_TEXTS: ["manager", "md"],
+  EDIT_TEMPLATES: ["manager", "md", "admin"],
 };
 
 export function can(role: Role, permission: Permission): boolean {

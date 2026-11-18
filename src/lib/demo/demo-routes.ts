@@ -136,6 +136,15 @@ const DEAL_ROUTES: [string, RegExp, Handler][] = [
     changeDeal(deal, { owner_user_id: member.id }, `Reassigned to ${member.full_name}`);
     return json(deal);
   })],
+  ["POST", /^\/v1\/deals\/([^/]+)\/offer$/, withDeal((deal, body) => {
+    const resumeAi = body.resume_ai !== false;
+    changeDeal(deal, resumeAi ? { ai_enabled: true, ai_paused_reason: null } : {}, `Special price approved: ${deal.currency} ${body.unit_price} per unit${resumeAi ? "; handed back to the AI" : ""}`);
+    return empty();
+  })],
+  ["POST", /^\/v1\/deals\/([^/]+)\/personal-contact-shared$/, withDeal((deal) => {
+    changeDeal(deal, { personal_contact_shared_at: nowIso() }, "Shared a personal contact with the buyer");
+    return json(deal);
+  })],
   ["POST", /^\/v1\/deals\/([^/]+)\/takeover$/, withDeal((deal) => {
     changeDeal(deal, { taken_over_by: currentUser()?.id ?? null }, "Took the deal over");
     return json(deal);

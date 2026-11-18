@@ -3,6 +3,7 @@
 /** §21 dashboards, §20.11 settings (business settings, users, channels, prices, kill switch) and my account. */
 import { api, unwrap, type Schemas } from "./client";
 import { runAction } from "./crm";
+import type { TemplateVersion } from "./schema-additions";
 import { useApi } from "./use-api";
 
 export type SalespersonBoard = Schemas["SalespersonBoard"];
@@ -15,7 +16,8 @@ export type NewStaff = Schemas["UserCreateIn"];
 export type StaffPatch = Schemas["UserPatchIn"];
 export type ChannelAccount = Schemas["ChannelAccountOut"];
 export type ChannelPatch = Schemas["ChannelAccountPatch"];
-export type Template = Schemas["TemplateOut"];
+/** Every edit is a version (18 Nov); the generated schema doesn't have the version fields yet. */
+export type Template = TemplateVersion;
 export type TemplateInput = Schemas["TemplateIn"];
 export type TemplateStatus = Schemas["TemplateStatusIn"]["provider_status"];
 export type KillSwitchLevel = Schemas["KillSwitchIn"]["level"];
@@ -83,7 +85,21 @@ export function setAvailability(userId: string, isAway: boolean, backupUserId: s
 // ---------- Channels (§20.11) ----------
 
 export const useChannelAccounts = () => useApi("channels", async () => unwrap(await api.GET("/v1/admin/channel-accounts")));
-export const useTemplates = () => useApi("templates", async () => unwrap(await api.GET("/v1/admin/message-templates")));
+/** Every version, newest first (one call serves both the main table and each template's history). */
+export const useTemplates = () => useApi("templates", async () => unwrap(await api.GET("/v1/admin/message-templates")) as TemplateVersion[]);
+
+/** The newest version of each template (channel + name + language), with the version being sent next to it. */
+export function currentTemplates(versions: Template[]) {
+  const groups = new Map<string, Template[]>();
+  for (const version of versions) {
+    const key = `${version.channel}:${version.name}:${version.language}`;
+    groups.set(key, [...(groups.get(key) ?? []), version]);
+  }
+  return [...groups.values()].map((group) => {
+    const sorted = [...group].sort((a, b) => b.version - a.version);
+    return { newest: sorted[0], live: sorted.find((version) => version.live) ?? null, versions: sorted };
+  });
+}
 
 export function editChannelAccount(id: string, patch: ChannelPatch) {
   return runAction(async () => unwrap(await api.PATCH("/v1/admin/channel-accounts/{account_id}", { params: { path: { account_id: id } }, body: patch })), "Number saved", ["channels"]);

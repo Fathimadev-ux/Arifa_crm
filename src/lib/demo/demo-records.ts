@@ -3,6 +3,7 @@
  * catalogue with price tiers, stock, business settings, FX, channels, templates, material rates, kill switch.
  */
 import type { Schemas } from "@/lib/api/client";
+import type { TemplateVersion } from "@/lib/api/schema-additions";
 import { DEMO_STAFF, unitPriceOf } from "./demo-data";
 import { getState } from "./demo-store";
 
@@ -23,7 +24,7 @@ export interface RecordsState {
   settings: S["SettingOut"][];
   fx: S["FxRow"][];
   channels: S["ChannelAccountOut"][];
-  templates: S["TemplateOut"][];
+  templates: TemplateVersion[];
   rates: S["RateOut"][];
   freshness: S["FreshnessOut"][];
   killSwitch: S["KillSwitchIn"]["level"];
@@ -113,9 +114,10 @@ export function createRecordsState(now: number): RecordsState {
   ];
 
   records.fx = [
-    { currency: "USD", rate_to_aed: "3.6725", as_of: toIso(now).slice(0, 10), source: "central_bank" },
-    { currency: "INR", rate_to_aed: "0.0440", as_of: toIso(now).slice(0, 10), source: "central_bank" },
-    { currency: "SAR", rate_to_aed: "0.9793", as_of: toIso(now).slice(0, 10), source: "central_bank" },
+    // §5.4: a daily job stores these; a manager's rate for a day is never replaced by it.
+    { currency: "USD", rate_to_aed: "3.6725", as_of: toIso(now).slice(0, 10), source: "auto:open-er-api" },
+    { currency: "INR", rate_to_aed: "0.0440", as_of: toIso(now).slice(0, 10), source: "auto:open-er-api" },
+    { currency: "SAR", rate_to_aed: "0.9793", as_of: toIso(now).slice(0, 10), source: "auto:open-er-api" },
     { currency: "EUR", rate_to_aed: "3.9810", as_of: toIso(now - DAY).slice(0, 10), source: "manual" },
   ];
 
@@ -125,13 +127,16 @@ export function createRecordsState(now: number): RecordsState {
     { id: id("w", 3), channel: "email", provider: "smtp", display_name: "Arifa Pack Sales", address: "sales@arifapack.com", purpose: "sales", status: "active", region: null, countries: [], is_default: true, created_at: toIso(now - 90 * DAY) },
   ];
 
-  const template = (n: number, channel: string, name: string, category: string, status: string, body: string, subject: string | null = null): S["TemplateOut"] => ({
-    id: id("m", n), channel, name, language: "en", category, provider_status: status, subject, body, variables: [...body.matchAll(/\{\{(\w+)\}\}/g)].map((match) => match[1]), updated_at: toIso(now - n * DAY),
+  const template = (n: number, channel: string, name: string, category: string, status: string, body: string, version = 1, subject: string | null = null): TemplateVersion => ({
+    id: id("m", n), channel, name, language: "en", category, provider_status: status, subject, body, variables: [...body.matchAll(/\{\{(\w+)\}\}/g)].map((match) => match[1]),
+    version, provider_name: version > 1 ? `${name}_v${version}` : name, live: status === "approved", created_by: null, created_at: toIso(now - n * DAY), updated_at: toIso(now - n * DAY),
   });
+  // Every version, newest first (§5.2): quote_follow_up v2 waits for Meta while v1 keeps sending.
   records.templates = [
+    template(5, "whatsapp", "quote_follow_up", "utility", "submitted", "Hello {{name}}, any questions about quote {{quote}}? We're happy to help.", 2),
     template(1, "whatsapp", "quote_follow_up", "utility", "approved", "Hello {{name}}, did you get a chance to look at quote {{quote}}?"),
     template(2, "whatsapp", "reopen_conversation", "utility", "approved", "Hello {{name}}, {{salesperson}} from Arifa Pack here. Shall we continue?"),
-    template(3, "email", "quote_email", "utility", "approved", "Dear {{name}},\n\nPlease find our quote {{quote}} attached.", "Your quote from Arifa Pack"),
+    template(3, "email", "quote_email", "utility", "approved", "Dear {{name}},\n\nPlease find our quote {{quote}} attached.", 1, "Your quote from Arifa Pack"),
     template(4, "whatsapp", "festive_offer", "marketing", "submitted", "Season's greetings {{name}}! Special prices on foil containers this month."),
   ];
 

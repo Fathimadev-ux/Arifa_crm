@@ -3,7 +3,8 @@
 import { Phone, Send } from "lucide-react";
 import { useState } from "react";
 import type { DealDetail } from "@/lib/api/crm";
-import { type MessageChannel, type OptOut, callBuyer, recordOptOut, sendMessage } from "@/lib/api/deal-work";
+import { type MessageChannel, type OptOut, callBuyer, markPersonalContactShared, recordOptOut, sendMessage } from "@/lib/api/deal-work";
+import { formatDateTime } from "@/lib/format";
 import { FormCard, Select, TEXTAREA, TextArea } from "@/components/forms";
 import { Button, Section } from "@/components/ui";
 
@@ -115,9 +116,19 @@ export function BuyerConversation({ deal }: { deal: DealDetail }) {
               </div>
             </form>
           )}
-          <button onClick={() => setIsRecordingStop(true)} className="press rounded-full px-3 py-1.5 text-xs font-medium text-neutral-500 hover:bg-black/5 hover:text-black">
-            Buyer asked to stop?
-          </button>
+          <div className="flex flex-wrap items-center gap-1">
+            <button onClick={() => setIsRecordingStop(true)} className="press rounded-full px-3 py-1.5 text-xs font-medium text-neutral-500 hover:bg-black/5 hover:text-black">
+              Buyer asked to stop?
+            </button>
+            {/* §14 practical notes: once recorded it stays on the deal. */}
+            {deal.personal_contact_shared_at ? (
+              <span className="px-3 py-1.5 text-xs text-neutral-400">Personal contact shared · {formatDateTime(deal.personal_contact_shared_at)}</span>
+            ) : (
+              <button onClick={() => void markPersonalContactShared(deal.id)} className="press rounded-full px-3 py-1.5 text-xs font-medium text-neutral-500 hover:bg-black/5 hover:text-black">
+                I shared my personal contact
+              </button>
+            )}
+          </div>
         </div>
       )}
     </Section>

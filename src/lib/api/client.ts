@@ -6,6 +6,7 @@
 import createClient, { type Middleware } from "openapi-fetch";
 import { demoMiddleware } from "@/lib/demo/demo-api";
 import type { components, paths } from "./schema";
+import type { AddedPaths } from "./schema-additions";
 
 export type Schemas = components["schemas"];
 export type DealStage = Schemas["DealStage"];
@@ -18,6 +19,8 @@ export class ApiError extends Error {
     message: string,
     /** Business reason to switch on, e.g. "window_closed", "unapproved_price". */
     readonly reason?: string,
+    /** Per-field problems (e.g. invalid_company): shown under each field. */
+    readonly fields: { field: string; message: string }[] = [],
   ) {
     super(message);
   }
@@ -39,7 +42,8 @@ export function handleSessionEnded(callback: () => void) {
   onSessionEnded = callback;
 }
 
-export const api = createClient<paths>({ baseUrl: "", credentials: "include" });
+// AddedPaths: the 18 Nov endpoints, until docs/openapi-crm.json is regenerated (see schema-additions.ts).
+export const api = createClient<paths & AddedPaths>({ baseUrl: "", credentials: "include" });
 
 /** Asks for a new access token with the refresh cookie. Concurrent callers share one request. */
 export function renewSession(): Promise<boolean> {
@@ -84,6 +88,7 @@ interface ProblemBody {
   detail?: string | { loc: (string | number)[]; msg: string }[];
   title?: string;
   reason?: string;
+  errors?: { field: string; message: string }[];
 }
 
 /** Returns the data of a call, or throws an ApiError with a message fit for a toast. */
@@ -93,5 +98,5 @@ export function unwrap<T>(result: { data?: T; error?: unknown; response: Respons
   const message = Array.isArray(problem.detail)
     ? problem.detail.map((field) => (typeof field.loc?.at(-1) === "string" ? `${field.loc.at(-1)}: ${field.msg}` : field.msg)).join(", ")
     : (problem.detail ?? problem.title ?? `Request failed (${result.response.status})`);
-  throw new ApiError(result.response.status, message, problem.reason);
+  throw new ApiError(result.response.status, message, problem.reason, problem.errors ?? []);
 }

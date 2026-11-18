@@ -57,6 +57,42 @@ function killSwitchState() {
   return { level, marketing_stopped: order >= 1, calls_stopped: order >= 2, voice_stopped: order >= 3, all_held: order === 4 };
 }
 
+// ---------- Template versions (§5.2) ----------
+
+type Template = ReturnType<typeof getRecords>["templates"][number];
+const sameTemplate = (a: Pick<Template, "channel" | "name" | "language">, b: Pick<Template, "channel" | "name" | "language">) =>
+  a.channel === b.channel && a.name === b.name && a.language === b.language;
+
+function makeLive(template: Template) {
+  for (const other of getRecords().templates) {
+    if (other === template || !sameTemplate(other, template) || !other.live) continue;
+    Object.assign(other, { live: false, provider_status: "superseded" });
+  }
+  template.live = true;
+}
+
+/**
+ * Editing the live WhatsApp version makes a new version that waits for Meta (the live one keeps sending); a version
+ * not yet approved changes in place; email goes live at once with the previous version kept as history.
+ */
+function saveTemplateVersion(body: Body): Template {
+  const records = getRecords();
+  const key = { channel: String(body.channel), name: String(body.name), language: String(body.language) };
+  const newest = records.templates.find((item) => sameTemplate(item, key));
+  const fields = { category: String(body.category ?? "utility"), subject: (body.subject as string) ?? null, body: String(body.body), variables: (body.variables as string[]) ?? [], updated_at: nowIso() };
+  const isWhatsApp = key.channel === "whatsapp";
+  if (newest && isWhatsApp && !newest.live) return Object.assign(newest, fields);
+
+  const version = (newest?.version ?? 0) + 1;
+  const template: Template = {
+    id: newId(), ...key, ...fields, version, provider_name: version > 1 ? `${key.name}_v${version}` : key.name, provider_status: isWhatsApp ? "submitted" : "approved",
+    live: false, created_by: currentUser()?.id ?? null, created_at: nowIso(),
+  };
+  records.templates.unshift(template);
+  if (!isWhatsApp) makeLive(template);
+  return template;
+}
+
 function withStaff(handle: (member: S["UserAdminOut"], body: Body) => Response): Handler {
   return ([id], body) => {
     const member = getRecords().staff.find((item) => item.id === id);
@@ -159,20 +195,19 @@ export const ADMIN_ROUTES: [string, RegExp, Handler][] = [
     if (body.is_default) getRecords().channels.forEach((item) => item.channel === account.channel && (item.is_default = false));
     return json(Object.assign(account, Object.fromEntries(Object.entries(body).filter(([, value]) => value !== null && value !== undefined))));
   }],
-  ["GET", /^\/v1\/admin\/message-templates$/, () => json(getRecords().templates)],
-  ["PUT", /^\/v1\/admin\/message-templates$/, (_, body) => {
-    const existing = getRecords().templates.find((item) => item.name === body.name && item.channel === body.channel && item.language === body.language);
-    const fields = { category: String(body.category ?? "utility"), subject: (body.subject as string) ?? null, body: String(body.body), variables: (body.variables as string[]) ?? [], updated_at: nowIso() };
-    // A changed WhatsApp template goes back to Meta for approval.
-    const status = body.channel === "whatsapp" ? "submitted" : "approved";
-    if (existing) return json(Object.assign(existing, fields, { provider_status: status }));
-    const template = { id: newId(), channel: String(body.channel), name: String(body.name), language: String(body.language), provider_status: status, ...fields };
-    getRecords().templates.push(template);
-    return json(template);
+  ["GET", /^\/v1\/admin\/message-templates$/, (_, __, query) => {
+    const all = getRecords().templates;
+    // current_only: the newest version of each template (the list is kept newest first).
+    return json(query.get("current_only") === "true" ? all.filter((item, index) => all.findIndex((other) => sameTemplate(other, item)) === index) : all);
   }],
+  ["PUT", /^\/v1\/admin\/message-templates$/, (_, body) => json(saveTemplateVersion(body))],
   ["POST", /^\/v1\/admin\/message-templates\/([^/]+)\/status$/, ([id], body) => {
     const template = getRecords().templates.find((item) => item.id === id);
-    return template ? json(Object.assign(template, { provider_status: String(body.provider_status), updated_at: nowIso() })) : problem(404, "Template not found");
+    if (!template) return problem(404, "Template not found");
+    Object.assign(template, { provider_status: String(body.provider_status), updated_at: nowIso() });
+    // Approving a version makes it the one sent; the one sent before is kept as history.
+    if (template.provider_status === "approved") makeLive(template);
+    return json(template);
   }],
 
   // ---------- Material prices and the kill switch ----------

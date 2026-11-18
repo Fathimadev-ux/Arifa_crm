@@ -1,0 +1,231 @@
+ARIFA CRM - WHICH ENDPOINT IS FOR WHAT
+Source: docs/CRM_API.pdf (version of 18 Nov 2026) - 104 endpoints
+Grouped by CRM screen, in menu order.
+
+HOW TO READ
+  METHOD  PATH                                  What it does                                   Who can use it
+  (MFA)  = must be signed in with the authenticator app (6-digit code from the phone app)
+  [NEW]  = new in the 18 Nov PDF; the CRM screens don't use it yet
+  Roles: sales, manager, md, admin. "all" = all four roles.
+  Base path: every path starts with /v1 (except the public key). Money is a text like "12500.00".
+
+==========================================================================================
+1. LOGIN AND ACCOUNT (Login screen, My account)
+==========================================================================================
+  POST   /v1/auth/login                       Step 1: email + password; says which 2nd step is offered      public
+  POST   /v1/auth/mfa/totp                    Step 2 with the authenticator app code (full session)         public
+  POST   /v1/auth/mfa/email/send              Step 2 fallback: email a 6-digit code (valid 10 min)          public
+  POST   /v1/auth/mfa/email/verify            Step 2 with the email code (no approvals in this session)    public
+  POST   /v1/auth/refresh                     Get a new access token (token lasts 15 min)                   public
+  POST   /v1/auth/logout                      Log out: ends this browser's session                          public
+  GET    /v1/auth/me                          Who is signed in: name, role, languages                       all
+  POST   /v1/auth/totp/enrol                  My account: start setting up the authenticator app            all
+  POST   /v1/auth/totp/confirm                My account: first code switches the authenticator on          all
+  POST   /v1/auth/password                    My account: change password (ends other sessions)             all
+  POST   /v1/auth/password/reset/start        Forgot password: send a code to the work email                public
+  POST   /v1/auth/password/reset/finish       Forgot password: code + new password (min 12 chars)           public
+  GET    /.well-known/jwks.json               Public key to check login tokens (for other systems)          public
+  PUT    /v1/users/{user_id}/availability     "I'm away" / "I'm back", with a backup person                 all
+
+==========================================================================================
+2. TODAY AND INBOX
+==========================================================================================
+  GET    /v1/inbox                            My waiting items: approvals, change requests,                 all
+                                              below-minimum alerts, buyer messages
+  GET    /v1/approvals                        All quote approvals across the team, with deadlines           manager, md
+  GET    /v1/dashboard/summary                Pipeline summary: deals by stage, value, approvals            manager, md
+                                              pending / overdue, open tasks
+
+==========================================================================================
+3. PIPELINE (deals board)
+==========================================================================================
+  GET    /v1/deals                            Deals list / board; filters: stage, owner, country,           all (sales: own
+                                              product, value, unassigned, escalated, opted out               deals only)
+
+==========================================================================================
+4. DEAL PAGE (opened by clicking a deal)
+==========================================================================================
+  Reading the deal
+  GET    /v1/deals/{deal_id}                  The deal: buyer, company, requirement, stage, AI summary      all
+  GET    /v1/deals/{deal_id}/timeline         Every message, call, stage change and AI action               all
+  GET    /v1/deals/{deal_id}/quotes           All quote versions (to compare two side by side)              all
+
+  Quotes and approval
+  POST   /v1/deals/{deal_id}/quotes           Ask the backend to build the quote from the price list        all
+  POST   /v1/deals/{deal_id}/quotes/revise    Edit a quote -> new version (below minimum goes to manager)   all
+  POST   /v1/deals/{deal_id}/quotes/manual    A quote priced by hand, then approved as usual                all
+  GET    /v1/quote-versions/{version_id}      One quote version: lines, terms, delivery, totals             all
+  GET    /v1/quote-versions/{version_id}/costs Cost build-up per line (not on v1 screens)                   md
+  POST   /v1/approvals/{approval_id}/decision Approve / reject / ask for correction (MFA)                   sales, manager, md
+  POST   /v1/deals/{deal_id}/offer            Below-minimum alert: set an approved special price (MFA)      manager, md
+
+  Moving the deal
+  POST   /v1/deals/{deal_id}/stage            Move to another stage (Lost needs a reason)                   all
+  POST   /v1/deals/{deal_id}/payments         Confirm the advance payment -> stage Payment (MFA)            sales, manager, md
+  POST   /v1/deals/{deal_id}/won              Mark Won; the order is created (MFA)                          sales, manager, md
+  POST   /v1/deals/{deal_id}/reopen           Reopen a Lost deal; the AI stays paused (MFA)                 manager, md
+
+  Talking to the buyer
+  POST   /v1/deals/{deal_id}/messages         Reply on WhatsApp / email from the company number;            all
+                                              refused if the price isn't in an approved quote;
+                                              after 24 h silence resend with the re-open template
+  POST   /v1/deals/{deal_id}/call             Click-to-call: rings the salesperson first, then the buyer    all
+  POST   /v1/deals/{deal_id}/opt-out          Record that the buyer said stop (cancels follow-ups)          all
+  POST   /v1/deals/{deal_id}/personal-contact-shared  Note that a personal contact was shared               all
+
+  Who handles it
+  POST   /v1/deals/{deal_id}/ai               Pause the AI (take over) or hand back to the AI               manager, md
+  POST   /v1/deals/{deal_id}/reassign         Give the deal to another salesperson                          manager, md
+  POST   /v1/deals/{deal_id}/takeover         MD takes the deal over; salesperson becomes read-only         md
+  POST   /v1/deals/{deal_id}/handback         End the takeover; salesperson can work again                  md
+
+  Order (also on the Orders screen)
+  PATCH  /v1/deals/orders/{order_id}          Order status: in production -> ready -> shipped -> delivered  manager, md
+
+==========================================================================================
+5. REQUESTS (buyers' change requests)
+==========================================================================================
+  GET    /v1/change-requests                  Open requests with timers, oldest due first                   all (sales: own)
+  GET    /v1/change-requests/{cr_id}          One request: buyer's words, current vs requested values       all
+  POST   /v1/change-requests/{cr_id}/start    "Start": I'm taking it (the timer keeps running)              all
+  POST   /v1/change-requests/{cr_id}/revise   "Revise quote": new version; approving it resolves the card   all
+  POST   /v1/change-requests/{cr_id}/resolve  "Resolve": close it as done                                   all
+  POST   /v1/change-requests/{cr_id}/decline  "Decline" with a reason the buyer is told                     all
+
+==========================================================================================
+6. CONTACTS
+==========================================================================================
+  GET    /v1/contacts                         Search buyers by name, email or phone                         all (sales: own)
+  GET    /v1/contacts/{contact_id}            One buyer                                                     all (sales: own)
+  PATCH  /v1/contacts/{contact_id}            Edit name, designation, company, channel, language            all
+  GET    /v1/companies                        Search companies, newest first                                all
+  POST   /v1/companies                        Add a company                                                 all
+  PATCH  /v1/companies/{company_id}           Edit a company (logged)                                       all
+
+==========================================================================================
+7. ORDERS
+==========================================================================================
+  GET    /v1/orders                           Orders list, newest first                                     all (sales: own)
+  PATCH  /v1/deals/orders/{order_id}          Move an order to its next status (see Deal page)              manager, md
+
+==========================================================================================
+8. PRODUCTS AND PRICE LIST
+==========================================================================================
+  Products
+  GET    /v1/products                         Catalogue with MOQ, lead time, quotable, CMS sync state       all
+  GET    /v1/products/{product_id}            One product with its specification                            all
+  PATCH  /v1/products/{product_id}            Edit MOQ, delivery time, quotable / active (MFA)              manager, md
+  GET    /v1/products/{product_id}/history    Change history of one product and its prices                  all
+
+  Price tiers (price per quantity range)
+  GET    /v1/products/{product_id}/price-tiers  A product's tiers: list price and minimum per tier          all
+  POST   /v1/products/{product_id}/price-tiers  Add a tier (MFA, logged)                                    manager, admin, md
+  PATCH  /v1/price-tiers/{tier_id}            Change a tier's prices or quantities (MFA, logged)            manager, admin, md
+  DELETE /v1/price-tiers/{tier_id}            Delete a tier (MFA, logged)                                   manager, admin, md
+
+  Price list Excel (older, prices only)
+  POST   /v1/price-list/import                Upload the price list .xlsx; any error saves nothing (MFA)    manager, admin, md
+  GET    /v1/price-list/export                Download the price list as Excel                              all
+  GET    /v1/price-list/history               History of the whole price list (edits and imports)           all
+
+  Product workbook - ONE Excel for products, prices and website details  [NEW]
+  GET    /v1/catalogue/workbook               [NEW] Download the full catalogue workbook (MFA)              manager, md, admin
+  POST   /v1/catalogue/workbook/preview       [NEW] Upload it: shows every change and error, saves nothing  manager, md, admin
+  POST   /v1/catalogue/workbook/apply         [NEW] Save it (same file + token from preview); all or        manager, md, admin
+                                              nothing; product details go to the CMS as drafts
+
+==========================================================================================
+9. STOCK
+==========================================================================================
+  GET    /v1/stock                            Stock on hand per product or material                         all
+  PUT    /v1/stock                            Set a stock quantity (logged)                                 manager, admin, md
+
+==========================================================================================
+10. DASHBOARDS AND EXPORTS
+==========================================================================================
+  GET    /v1/dashboards/salesperson           My numbers: open deals by stage, waiting, response time,      all
+                                              quotes sent, deals won
+  GET    /v1/dashboards/manager               Team: each salesperson, below-minimum requests, change        manager, md
+                                              requests by type, SLA breaches, price changes, opt-outs
+  GET    /v1/dashboards/md                    Business: pipeline by stage, win rate, average discount,      md
+                                              deals by country / category / channel, top buyers,
+                                              takeover queue
+  GET    /v1/exports/{entity}                 Download a list as CSV or Excel (deals, contacts,             all (sales: own
+                                              companies, orders, products)                                   deals and orders)
+
+==========================================================================================
+11. SETTINGS
+==========================================================================================
+  Business tab
+  GET    /v1/settings                         All business rules (timer, follow-up days, VAT, etc.)         admin, manager, md
+  PUT    /v1/settings/{key}                   Change one rule (MFA, logged)                                 admin, manager, md
+  PUT    /v1/feature-flags/{key}              Switch a feature on / off (v2 features stay off) (MFA)        admin, manager, md
+
+  Users tab
+  GET    /v1/users                            All staff with role, authenticator and lock state             admin, manager, md
+  POST   /v1/users                            Add a user; one-time password shown once (MFA)                admin, md
+  PATCH  /v1/users/{user_id}                  Edit role, active, phone, languages, alert channels (MFA)     admin, md
+  POST   /v1/users/{user_id}/reset-mfa        Lost phone: reset the authenticator (MFA)                     admin, md
+  POST   /v1/users/{user_id}/unlock           Unlock after too many wrong passwords (MFA)                   admin, md
+  PUT    /v1/users/{user_id}/availability     Set someone away, with a backup                               all
+
+  Prices tab
+  GET    /v1/price-proposals                  Material prices waiting for a decision                        manager, md
+  POST   /v1/price-proposals/{rate_id}/approve  Accept a material price (can correct it) (MFA)              manager, md
+  POST   /v1/price-proposals/{rate_id}/reject   Reject a material price (MFA)                               manager, md
+  GET    /v1/materials/freshness              How old each approved material price is (old = blocks quotes) manager, md
+  GET    /v1/fx-rates                         Currency rates in AED (now updated automatically daily)       manager, md
+  POST   /v1/fx-rates                         Manager sets a rate for a day by hand (MFA)                   manager, md
+
+  Channels tab
+  GET    /v1/admin/channel-accounts           Company WhatsApp numbers / emails and their countries         admin, manager, md
+  PATCH  /v1/admin/channel-accounts/{account_id}  Which countries a number serves, default, on / off (MFA)  admin
+  GET    /v1/admin/message-templates          Templates with Meta approval state and every version          admin, manager, md
+  PUT    /v1/admin/message-templates          Add / edit a template; editing a live WhatsApp one makes      manager, md, admin
+                                              a new version that waits for Meta (MFA)
+  POST   /v1/admin/message-templates/{template_id}/status  Record Meta's decision (approved -> becomes live) manager, md, admin
+
+  Kill switch tab
+  GET    /v1/admin/kill-switch                Current level and what it stops                               admin, manager, md
+  PUT    /v1/admin/kill-switch                Set level: off / marketing / calls / text_only / hold (MFA)   admin, md
+
+  Message texts  [NEW - needs a new Settings tab]
+  GET    /v1/texts                            [NEW] Every editable AI / buyer / staff text and its          manager, md, admin
+                                              translation state
+  PUT    /v1/texts/{key}                      [NEW] Change the English text; live in 30 s; AI translates    manager, md
+                                              to Arabic, Hindi, Tamil, Chinese, Sinhala (MFA)
+  POST   /v1/texts/{key}/reset                [NEW] Back to the built-in wording (MFA)                      manager, md
+  GET    /v1/texts/{key}/history              [NEW] Who changed a text, when, old and new                   manager, md, admin
+  POST   /v1/texts/translate-missing          [NEW] Translate every text that has no translation (MFA)      manager, md
+
+  Company details  [NEW - needs a new Settings tab]
+  GET    /v1/company                          [NEW] Company details printed on quotes, with a preview       admin, md, manager
+  PATCH  /v1/company                          [NEW] Edit name, address, TRN, phone, email, bank details;    admin, md, manager
+                                              a bank change alerts the MD and manager (MFA)
+  PUT    /v1/company/logo                     [NEW] Upload the logo (PNG / JPEG, max 200 KB) (MFA)          admin, md, manager
+  DELETE /v1/company/logo                     [NEW] Remove the logo (MFA)                                   admin, md, manager
+
+==========================================================================================
+WHAT IS NEW IN THE 18 NOV PDF (to build in the CRM)
+==========================================================================================
+  1. Product workbook (3 endpoints): download / preview / apply one Excel file for products,
+     prices and website details. Screen "Product workbook" under Products.
+  2. Message texts (5 endpoints): edit the AI's fixed phrases, buyer messages and staff alerts;
+     AI translates into 5 languages. New Settings tab "Message texts".
+  3. Company details (4 endpoints): name, address, TRN, bank details and logo printed on quotes.
+     New Settings tab "Company".
+  4. Message templates now keep versions: editing a live WhatsApp template makes a new version
+     until Meta approves it (same endpoints, new behaviour).
+  5. Currency rates are now automatic (daily at 06:05 Dubai); show "automatic" or
+     "entered by manager" next to each rate.
+
+==========================================================================================
+COMMON ANSWERS (errors)
+==========================================================================================
+  401  Not signed in / token expired -> refresh, else go to login
+  403  Wrong role, someone else's deal, authenticator sign-in needed, or MD took the deal over
+  404  Not found or not visible to this user
+  409  Someone else changed it -> reload
+  422  A business rule said no -> show the message (e.g. unapproved_price, window_closed, opt_out)
+  429  Locked out after too many tries -> wait 15 minutes
+  503  Email or calls service down -> try again later

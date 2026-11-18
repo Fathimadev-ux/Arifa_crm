@@ -72,6 +72,34 @@ export function exportPriceList() {
   );
 }
 
+// ---------- Product workbook (§5.1): one Excel for products, prices and website details ----------
+
+const XLSX_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+const fileBody = (file: File) => ({ body: file as never, bodySerializer: (body: unknown) => body as BodyInit, headers: { "Content-Type": XLSX_TYPE } });
+
+export function downloadWorkbook() {
+  return runAction(
+    async () => {
+      const result = await api.GET("/v1/catalogue/workbook", { parseAs: "stream" });
+      unwrap(result);
+      await saveFile(result.response, "product-workbook.xlsx");
+      return true;
+    },
+    "Catalogue downloaded",
+    [],
+  );
+}
+
+/** Saves nothing: every change, error and warning, plus the token Apply needs. */
+export function previewWorkbook(file: File) {
+  return runAction(async () => unwrap(await api.POST("/v1/catalogue/workbook/preview", fileBody(file))), "File checked", []);
+}
+
+/** The same file as the preview. All or nothing; 409 = the catalogue changed since the preview. */
+export function applyWorkbook(file: File, token: string) {
+  return runAction(async () => unwrap(await api.POST("/v1/catalogue/workbook/apply", { ...fileBody(file), params: { query: { token } } })), "Catalogue saved", ["products", "stock"]);
+}
+
 export function setStock(item: Pick<StockItem, "product_id" | "material_code" | "unit">, quantity: string) {
   return runAction(async () => unwrap(await api.PUT("/v1/stock", { body: { product_id: item.product_id, material_code: item.material_code, quantity, unit: item.unit } })), "Stock saved", ["stock"]);
 }

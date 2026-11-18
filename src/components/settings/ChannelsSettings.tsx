@@ -2,8 +2,8 @@
 
 import { Plus } from "lucide-react";
 import { useState } from "react";
-import { type ChannelAccount, type Template, type TemplateInput, type TemplateStatus, editChannelAccount, saveTemplate, setTemplateStatus, useChannelAccounts, useTemplates } from "@/lib/api/admin";
-import { channelLabel, humanize } from "@/lib/format";
+import { type ChannelAccount, type Template, type TemplateInput, type TemplateStatus, currentTemplates, editChannelAccount, saveTemplate, setTemplateStatus, useChannelAccounts, useTemplates } from "@/lib/api/admin";
+import { channelLabel, formatDateTime, humanize } from "@/lib/format";
 import { type Column, DataTable } from "@/components/DataTable";
 import { FormCard, Select, TextArea, TextInput } from "@/components/forms";
 import { Button, LoadingState } from "@/components/ui";
@@ -44,8 +44,27 @@ function AccountEditor({ account, onClose }: { account: ChannelAccount; onClose:
   );
 }
 
-/** A message template; a WhatsApp one waits for Meta's approval before it can be sent. */
-function TemplateEditor({ template, onClose }: { template: Template | null; onClose: () => void }) {
+/** Every version of one template, newest first; "live" is the one being sent. */
+function TemplateVersions({ versions }: { versions: Template[] }) {
+  return (
+    <div className="space-y-1 border-t border-dashed border-neutral-200 pt-3">
+      <p className="text-xs font-semibold text-neutral-500">Versions</p>
+      {versions.map((version) => (
+        <p key={version.id} className="text-xs text-neutral-600">
+          v{version.version} · {humanize(version.provider_status)}
+          {version.live && <span className="ml-1.5 rounded-full bg-black px-2 py-0.5 font-medium text-white">Live</span>}
+          {version.provider_name && <span className="font-mono text-neutral-400"> · {version.provider_name}</span>} · {formatDateTime(version.created_at)}
+        </p>
+      ))}
+    </div>
+  );
+}
+
+/**
+ * A message template. Editing the live WhatsApp version makes a new version that waits for Meta; the live one keeps
+ * sending until Meta approves it. A version not yet approved is changed in place; email goes live at once.
+ */
+function TemplateEditor({ template, versions, onClose }: { template: Template | null; versions: Template[]; onClose: () => void }) {
   const [form, setForm] = useState<TemplateInput>({
     channel: (template?.channel as TemplateInput["channel"]) ?? "whatsapp",
     name: template?.name ?? "",
@@ -73,12 +92,14 @@ function TemplateEditor({ template, onClose }: { template: Template | null; onCl
       </div>
       {form.channel === "email" && <TextInput label="Subject" value={form.subject ?? ""} onChange={(event) => update({ subject: event.target.value })} maxLength={300} />}
       <TextArea label="Message ({{name}} for a variable)" rows={4} value={form.body} onChange={(event) => update({ body: event.target.value })} maxLength={4000} />
+      {template?.live && template.channel === "whatsapp" && <p className="text-xs text-neutral-500">This version is live: saving makes a new version for Meta to approve. This one keeps sending until then.</p>}
+      {versions.length > 1 && <TemplateVersions versions={versions} />}
     </FormCard>
   );
 }
 
-/** §20.11 the company's WhatsApp numbers and email addresses, and the message templates. Admin edits. */
-export function ChannelsSettings({ canEdit }: { canEdit: boolean }) {
+/** §20.11 the company's WhatsApp numbers and email addresses (admin edits) and the message templates (manager, MD, admin). */
+export function ChannelsSettings({ canEditNumbers, canEditTemplates }: { canEditNumbers: boolean; canEditTemplates: boolean }) {
   const { data: accounts } = useChannelAccounts();
   const { data: templates } = useTemplates();
   const [openAccountId, setOpenAccountId] = useState<string | null>(null);
@@ -92,14 +113,25 @@ export function ChannelsSettings({ canEdit }: { canEdit: boolean }) {
     { label: "Countries", cell: (account) => account.countries.join(", ") || "—", sub: (account) => (account.is_default ? "Default" : undefined), width: "26%" },
     { label: "Status", cell: (account) => humanize(account.status), width: "26%" },
   ];
+  const groups = currentTemplates(templates);
+  const liveOf = (template: Template) => groups.find((group) => group.newest.id === template.id)?.live ?? null;
   const templateColumns: Column<Template>[] = [
-    { label: "Template", cell: (template) => template.name, sub: (template) => template.body, width: "40%" },
-    { label: "Channel", cell: (template) => channelLabel(template.channel), sub: (template) => `${humanize(template.category)} · ${template.language}`, width: "22%" },
+    { label: "Template", cell: (template) => template.name, sub: (template) => template.body, width: "34%" },
+    { label: "Channel", cell: (template) => channelLabel(template.channel), sub: (template) => `${humanize(template.category)} · ${template.language}`, width: "18%" },
+    {
+      label: "Version",
+      width: "18%",
+      cell: (template) => `v${template.version}`,
+      sub: (template) => {
+        const live = liveOf(template);
+        return template.live ? "Live" : live ? `v${live.version} is live` : "Not live yet";
+      },
+    },
     {
       label: "Meta approval",
-      width: "38%",
+      width: "30%",
       cell: (template) =>
-        canEdit && template.channel === "whatsapp" ? (
+        canEditTemplates && template.channel === "whatsapp" ? (
           <select
             value={template.provider_status}
             onClick={(event) => event.stopPropagation()}
@@ -119,24 +151,25 @@ export function ChannelsSettings({ canEdit }: { canEdit: boolean }) {
     },
   ];
   const openAccount = accounts.find((account) => account.id === openAccountId);
-  const openTemplate = templates.find((template) => template.id === openTemplateId);
+  const openGroup = groups.find((group) => group.newest.id === openTemplateId);
+  const openTemplate = openGroup?.newest;
 
   return (
     <div className="space-y-4 md:space-y-5">
       <h2 className="text-lg font-medium tracking-tight">Numbers and addresses</h2>
       {openAccount && <AccountEditor key={openAccount.id} account={openAccount} onClose={() => setOpenAccountId(null)} />}
-      <DataTable rows={accounts} columns={accountColumns} rowKey={(account) => account.id} activeKey={openAccountId} onRowClick={canEdit ? (account) => setOpenAccountId(account.id) : undefined} />
+      <DataTable rows={accounts} columns={accountColumns} rowKey={(account) => account.id} activeKey={openAccountId} onRowClick={canEditNumbers ? (account) => setOpenAccountId(account.id) : undefined} />
 
       <div className="flex items-center justify-between pt-2">
         <h2 className="text-lg font-medium tracking-tight">Message templates</h2>
-        {canEdit && openTemplateId !== "new" && (
+        {canEditTemplates && openTemplateId !== "new" && (
           <Button variant="secondary" onClick={() => setOpenTemplateId("new")}>
             <Plus className="size-4" /> Template
           </Button>
         )}
       </div>
-      {(openTemplate || openTemplateId === "new") && <TemplateEditor key={openTemplateId} template={openTemplate ?? null} onClose={() => setOpenTemplateId(null)} />}
-      <DataTable rows={templates} columns={templateColumns} rowKey={(template) => template.id} activeKey={openTemplateId} onRowClick={canEdit ? (template) => setOpenTemplateId(template.id) : undefined} />
+      {(openTemplate || openTemplateId === "new") && <TemplateEditor key={openTemplateId} template={openTemplate ?? null} versions={openGroup?.versions ?? []} onClose={() => setOpenTemplateId(null)} />}
+      <DataTable rows={groups.map((group) => group.newest)} columns={templateColumns} rowKey={(template) => template.id} activeKey={openTemplateId} onRowClick={canEditTemplates ? (template) => setOpenTemplateId(template.id) : undefined} />
     </div>
   );
 }
