@@ -118,12 +118,9 @@ export function LoginScreen() {
 
   const handleSignIn = submit(async () => {
     const challenge = await startLogin(email.trim(), password);
-    // DEMO ONLY: skip the 6-digit code step (the sample data accepts any code). Remove this line and
-    // un-comment the two below when the real backend is connected.
-    signedIn(await verifyAppCode(challenge, "000000"));
     // The authenticator app comes first; the email code is the fallback (and the only way before it is set up).
-    // if (challenge.methods.includes("totp")) goTo({ name: "CODE", challenge, method: "totp" });
-    // else await askForEmailCode(challenge);
+    if (challenge.methods.includes("totp")) goTo({ name: "CODE", challenge, method: "totp" });
+    else await askForEmailCode(challenge);
   });
 
   const handleCode = (challenge: Challenge, method: "totp" | "email") =>

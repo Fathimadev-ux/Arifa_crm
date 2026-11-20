@@ -10,20 +10,6 @@ import { FADE, POPOVER_SPRING } from "@/config/motion";
 
 const DEAL_RESULT_LIMIT = 8;
 
-const PAGES = [
-  { title: "Today", subtitle: "Page", href: "/" },
-  { title: "Inbox", subtitle: "Page", href: "/inbox" },
-  { title: "Pipeline", subtitle: "Page", href: "/pipeline" },
-  { title: "Requests", subtitle: "Page", href: "/requests" },
-  { title: "Contacts", subtitle: "Page", href: "/contacts" },
-  { title: "Orders", subtitle: "Page", href: "/orders" },
-  { title: "Products", subtitle: "Page", href: "/products" },
-  { title: "Stock", subtitle: "Page", href: "/stock" },
-  { title: "Dashboards", subtitle: "Page", href: "/dashboards" },
-  { title: "Settings", subtitle: "Page", href: "/settings" },
-  { title: "My account", subtitle: "Page", href: "/account" },
-];
-
 interface SearchResult {
   key: string;
   title: string;
@@ -55,12 +41,11 @@ function PaletteDialog() {
   const [activeIndex, setActiveIndex] = useState(0);
 
   const needle = query.trim().toLowerCase();
-  const pageResults: SearchResult[] = PAGES.filter((page) => page.title.toLowerCase().includes(needle)).map((page) => ({ key: page.href, ...page }));
-  const dealResults: SearchResult[] = (deals ?? [])
+  // Deals only: the pages are already in the side menu.
+  const results: SearchResult[] = (deals ?? [])
     .filter((deal) => deal.number.toLowerCase().includes(needle))
     .slice(0, DEAL_RESULT_LIMIT)
     .map((deal) => ({ key: deal.id, title: deal.number, subtitle: stageLabel(deal.stage), href: `/deals/${deal.id}` }));
-  const results = [...dealResults, ...pageResults];
   const selectedIndex = Math.min(activeIndex, results.length - 1);
 
   const openResult = (result: SearchResult | undefined) => {
@@ -109,7 +94,7 @@ function PaletteDialog() {
               setActiveIndex(0);
             }}
             onKeyDown={handleKeyDown}
-            placeholder="Search deals and pages…"
+            placeholder="Search deals by number, e.g. D-1004"
             className="h-14 flex-1 bg-transparent text-[15px] outline-none placeholder:text-neutral-400"
           />
           <kbd className="rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] text-neutral-500">Esc</kbd>
@@ -138,7 +123,7 @@ function PaletteDialog() {
   );
 }
 
-/** Global search, opened with Ctrl+K / ⌘K or the sidebar button. */
+/** Deal search, opened with Ctrl+K / ⌘K or the search box in the top bar. */
 export function CommandPalette() {
   const isOpen = useSyncExternalStore(subscribe, () => isPaletteOpen, () => false);
 

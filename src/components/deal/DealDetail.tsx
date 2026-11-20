@@ -4,10 +4,11 @@ import { ArrowLeft, CalendarDays, Clock, Package, UserRound } from "lucide-react
 import Link from "next/link";
 import { lostReasonLabel } from "@/config/stages";
 import { useChangeRequests } from "@/lib/api/change-requests";
-import { type DealDetail as Deal, type TimelineEvent, useDeal, useTimeline } from "@/lib/api/crm";
-import { channelLabel, formatCount, formatDate, formatDateTime, formatRelative, humanize } from "@/lib/format";
+import { type DealDetail as Deal, useDeal } from "@/lib/api/crm";
+import { channelLabel, formatCount, formatDate, formatRelative, humanize } from "@/lib/format";
 import { useNow } from "@/hooks/useNow";
 import { useStaffNames } from "@/hooks/useStaffNames";
+import { ActivityChat } from "@/components/deal/ActivityChat";
 import { BuyerConversation } from "@/components/deal/BuyerConversation";
 import { AiCard, OwnerValue, StageActions } from "@/components/deal/DealActions";
 import { DealOrder } from "@/components/deal/DealOrder";
@@ -26,37 +27,6 @@ function DealRequests({ dealId }: { dealId: string }) {
         <RequestCard key={request.id} request={request} index={index} />
       ))}
     </>
-  );
-}
-
-function ActivityTimeline({ deal }: { deal: Deal }) {
-  const { data: events } = useTimeline(deal.id);
-  const { nameOf } = useStaffNames();
-
-  const actorOf = (event: TimelineEvent) => {
-    if (event.actor_type === "staff") return nameOf(event.actor_id);
-    if (event.actor_type === "buyer") return deal.contact.full_name ?? "Buyer";
-    return event.actor_type === "ai" ? "AI" : humanize(event.actor_type);
-  };
-
-  return (
-    <Section title="Activity" index={5}>
-      {!events && <div className="h-24 animate-pulse rounded-2xl bg-neutral-100" />}
-      {events?.length === 0 && <p className="text-sm text-neutral-400">No activity yet</p>}
-      <ol className="relative space-y-5 before:absolute before:top-1.5 before:bottom-1.5 before:left-[3px] before:w-px before:bg-neutral-200">
-        {events?.map((event, index) => (
-          <li key={event.id} className="group relative -mx-2 rounded-2xl py-1 pr-2 pl-7 transition-colors hover:bg-black/[0.04]">
-            <span className={`absolute top-2.5 left-2 size-[7px] rounded-full transition-transform group-hover:scale-150 ${index === 0 ? "bg-black" : "bg-neutral-300"}`} />
-            <p className="text-sm font-medium">
-              {actorOf(event)}
-              {event.channel && <span className="font-normal text-neutral-400"> · {channelLabel(event.channel)}</span>}
-            </p>
-            <p className="mt-0.5 text-sm text-neutral-600">{event.summary}</p>
-            <p className="mt-1 text-xs text-neutral-400">{formatDateTime(event.at)}</p>
-          </li>
-        ))}
-      </ol>
-    </Section>
   );
 }
 
@@ -148,7 +118,7 @@ export function DealDetail({ id }: { id: string }) {
         <StatCard index={3} icon={Clock} label={isOverdue ? "Overdue" : "Next action"} value={deal.next_action_at && now !== null ? formatRelative(deal.next_action_at, now) : "—"} />
         <StatCard index={4} icon={Package} label="Quantity" value={firstRequirement?.quantity ? formatCount(firstRequirement.quantity) : "—"} />
         <StatCard index={5} icon={CalendarDays} label="Needed by" value={firstRequirement?.needed_by ? formatDate(firstRequirement.needed_by) : "—"} />
-        <StatCard index={6} icon={UserRound} label="Owner" value={<OwnerValue deal={deal} />} />
+        <StatCard index={6} icon={UserRound} label="Salesperson" value={<OwnerValue deal={deal} />} />
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:gap-5 lg:grid-cols-3">
@@ -173,7 +143,7 @@ export function DealDetail({ id }: { id: string }) {
         <div className="space-y-4 md:space-y-5">
           <AiCard deal={deal} now={now} />
           <BuyerConversation deal={deal} />
-          <ActivityTimeline deal={deal} />
+          <ActivityChat deal={deal} />
         </div>
       </div>
     </div>

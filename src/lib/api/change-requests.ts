@@ -19,10 +19,6 @@ export const useChangeRequests = (status: RequestStatus, dealId?: string) =>
 
 const afterRequestChange = (request: ChangeRequest) => [REQUESTS, ...afterDealChange(request.deal_id), "approvals"];
 
-export function startRequest(request: ChangeRequest) {
-  return runAction(async () => unwrap(await api.POST("/v1/change-requests/{cr_id}/start", crPath(request.id))), "You're on it: the timer keeps running", afterRequestChange(request));
-}
-
 /** A new quote version with the edits; approving it resolves the card (§13.3-4). */
 export function reviseForRequest(request: ChangeRequest, edits: QuoteEdits) {
   return runAction(async () => unwrap(await api.POST("/v1/change-requests/{cr_id}/revise", { ...crPath(request.id), body: edits })), "Revised quote sent for approval", afterRequestChange(request));

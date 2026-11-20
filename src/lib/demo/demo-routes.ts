@@ -189,11 +189,6 @@ const QUOTE_ROUTES: [string, RegExp, Handler][] = [
 
 const REQUEST_ROUTES: [string, RegExp, Handler][] = [
   ["GET", /^\/v1\/change-requests$/, (_, __, query) => json(changeRequestsFor(query.get("status") ?? "open", query.get("deal_id")))],
-  ["POST", /^\/v1\/change-requests\/([^/]+)\/start$/, withRequest((request, deal) => {
-    Object.assign(request, { status: "in_progress", assigned_to: currentUser()?.id ?? request.assigned_to });
-    changeDeal(deal, {}, "Started work on the change request");
-    return json(request);
-  })],
   ["POST", /^\/v1\/change-requests\/([^/]+)\/revise$/, withRequest((request, deal, body) => revise(deal, request.quote_version_id, body, "Revised the quote for the change request"))],
   ["POST", /^\/v1\/change-requests\/([^/]+)\/resolve$/, withRequest((request, deal, body) => {
     Object.assign(request, { status: "resolved", resolved_version_id: String(body.version_id) });

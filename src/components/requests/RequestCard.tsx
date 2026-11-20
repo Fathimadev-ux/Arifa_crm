@@ -2,11 +2,9 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { type ChangeRequest, declineRequest, resolveRequest, reviseForRequest, startRequest } from "@/lib/api/change-requests";
+import { type ChangeRequest, declineRequest, resolveRequest, reviseForRequest } from "@/lib/api/change-requests";
 import { useQuoteVersion } from "@/lib/api/deal-work";
-import { formatRelative, humanize } from "@/lib/format";
-import { useNow } from "@/hooks/useNow";
-import { ApprovalTimerRing } from "@/components/charts/ApprovalTimerRing";
+import { humanize } from "@/lib/format";
 import { FormCard, TextArea } from "@/components/forms";
 import { QuoteEditForm } from "@/components/quote/QuoteEditForm";
 import { Button, enterDelay } from "@/components/ui";
@@ -25,20 +23,18 @@ function describeField(field: Record<string, unknown>): { label: string; change:
 
 type Mode = "VIEW" | "REVISE" | "DECLINE";
 
-/** The §13.2 card: the buyer's words, what changes, the SLA timer, and the actions. */
+/** The §13.2 card: the buyer's words, what changes, and the actions (revise, decline, resolve). */
 export function RequestCard({ request, dealNumber, index = 0 }: { request: ChangeRequest; dealNumber?: string; index?: number }) {
-  const now = useNow();
   const [mode, setMode] = useState<Mode>("VIEW");
   const [reason, setReason] = useState("");
   const [revisedVersionId, setRevisedVersionId] = useState<string | null>(null);
   const { data: quoteVersion } = useQuoteVersion(mode === "REVISE" ? request.quote_version_id : null);
 
   const isOpen = !CLOSED_STATUSES.includes(request.status);
-  const isOverdue = now !== null && new Date(request.sla_due_at).getTime() < now;
   const resolveVersionId = revisedVersionId ?? request.resolved_version_id ?? request.quote_version_id;
 
   return (
-    <article className={`animate-enter lift panel space-y-4 p-5 ${isOpen && isOverdue ? "ring-1 ring-black" : ""}`} style={enterDelay(index)}>
+    <article className="animate-enter lift panel space-y-4 p-5" style={enterDelay(index)}>
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
@@ -52,12 +48,6 @@ export function RequestCard({ request, dealNumber, index = 0 }: { request: Chang
             </Link>
           )}
         </div>
-        {isOpen && now !== null && (
-          <span className={`flex items-center gap-2 text-xs ${isOverdue ? "font-semibold" : "text-neutral-500"}`}>
-            <ApprovalTimerRing start={request.created_at} deadline={request.sla_due_at} now={now} />
-            {isOverdue ? `Overdue ${formatRelative(request.sla_due_at, now)}` : `Due ${formatRelative(request.sla_due_at, now)}`}
-          </span>
-        )}
       </header>
 
       <blockquote className="rounded-2xl bg-black/[0.03] px-4 py-3 text-sm">
@@ -84,11 +74,6 @@ export function RequestCard({ request, dealNumber, index = 0 }: { request: Chang
 
       {isOpen && mode === "VIEW" && (
         <div className="flex flex-wrap gap-2">
-          {request.status === "open" && (
-            <Button variant="secondary" onClick={() => void startRequest(request)}>
-              Start
-            </Button>
-          )}
           {request.quote_version_id && (
             <Button variant="secondary" onClick={() => setMode("REVISE")}>
               Revise quote
