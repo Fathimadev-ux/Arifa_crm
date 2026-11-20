@@ -6,7 +6,6 @@
 import createClient, { type Middleware } from "openapi-fetch";
 import { demoMiddleware } from "@/lib/demo/demo-api";
 import type { components, paths } from "./schema";
-import type { AddedPaths } from "./schema-additions";
 
 export type Schemas = components["schemas"];
 export type DealStage = Schemas["DealStage"];
@@ -28,29 +27,32 @@ export class ApiError extends Error {
 
 // The access token lives in memory only; the refresh token is an HttpOnly cookie the browser sends itself.
 let accessToken: string | null = null;
+/** Signed in with the authenticator app (`mfa` in the token answer); an email-code session can't approve. */
+let isMfaSession = false;
 let renewal: Promise<boolean> | null = null;
 let onSessionEnded: () => void = () => {};
 
-export function setAccessToken(token: string | null) {
+export function setAccessToken(token: string | null, mfa = false) {
   accessToken = token;
+  isMfaSession = token !== null && mfa;
 }
 
 export const hasAccessToken = () => accessToken !== null;
+export const hasMfaSession = () => isMfaSession;
 
 /** Called when the session cannot be renewed (the login screen listens). */
 export function handleSessionEnded(callback: () => void) {
   onSessionEnded = callback;
 }
 
-// AddedPaths: the 18 Nov endpoints, until docs/openapi-crm.json is regenerated (see schema-additions.ts).
-export const api = createClient<paths & AddedPaths>({ baseUrl: "", credentials: "include" });
+export const api = createClient<paths>({ baseUrl: "", credentials: "include" });
 
 /** Asks for a new access token with the refresh cookie. Concurrent callers share one request. */
 export function renewSession(): Promise<boolean> {
   renewal ??= api
     .POST("/v1/auth/refresh")
     .then(({ data }) => {
-      setAccessToken(data?.access_token ?? null);
+      setAccessToken(data?.access_token ?? null, data?.mfa ?? false);
       return Boolean(data);
     })
     .catch(() => false)

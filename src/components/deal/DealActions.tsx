@@ -4,12 +4,13 @@ import { Bot } from "lucide-react";
 import { useState } from "react";
 import { can } from "@/config/roles";
 import { LOST_REASONS, type LostReason, isClosedStage, nextStageOf, stageLabel } from "@/config/stages";
-import { type DealDetail, moveDeal, reassignDeal, reopenDeal, setAiEnabled } from "@/lib/api/crm";
+import { type DealDetail, moveDeal, reassignDeal, reopenDeal, setAiEnabled, useQuotes } from "@/lib/api/crm";
 import { setSpecialPrice, setTakeover } from "@/lib/api/deal-work";
 import { formatRelative, humanize } from "@/lib/format";
 import { useStaffNames } from "@/hooks/useStaffNames";
 import { useSession } from "@/store/session";
 import { FormCard, TextArea, TextInput } from "@/components/forms";
+import { showToast } from "@/components/Toaster";
 import { Avatar, Button, enterDelay } from "@/components/ui";
 
 const FIELD = "glass h-10 rounded-full px-4 text-sm shadow-sm outline-none transition-shadow placeholder:text-neutral-400 focus:border-black focus:shadow-md";
@@ -75,8 +76,22 @@ function PaymentForm({ deal, onClose }: { deal: DealDetail; onClose: () => void 
 /** §15.2: WON is a human step; the expected re-order date is optional. The order record is created. */
 function WonForm({ deal, onClose }: { deal: DealDetail; onClose: () => void }) {
   const [reorderDate, setReorderDate] = useState("");
+  const { data: quotes } = useQuotes(deal.id);
+
+  /** The answer is the new order: say which quote version it was made from (final_quote_version_id). */
+  const announce = (result: unknown) => {
+    const order = result as { number?: string; final_quote_version_id?: string } | undefined;
+    const version = quotes?.find((quote) => quote.id === order?.final_quote_version_id);
+    if (order?.number) showToast(`Order ${order.number} created${version ? ` from quote v${version.version_no}` : ""}`);
+  };
+
   return (
-    <FormCard title="Mark won" submitLabel="Mark won" onCancel={onClose} onSubmit={() => void moveDeal(deal, "WON", { won: { expected_reorder_date: reorderDate || null } }).then((result) => result && onClose())}>
+    <FormCard
+      title="Mark won"
+      submitLabel="Mark won"
+      onCancel={onClose}
+      onSubmit={() => void moveDeal(deal, "WON", { won: { expected_reorder_date: reorderDate || null } }).then((result) => result && (announce(result), onClose()))}
+    >
       <TextInput label="Expected re-order (optional)" type="date" value={reorderDate} onChange={(event) => setReorderDate(event.target.value)} />
     </FormCard>
   );
@@ -106,7 +121,7 @@ function SpecialPriceForm({ deal, onClose }: { deal: DealDetail; onClose: () => 
 /** Move forward, mark lost (with a reason from the list), or reopen a lost deal (manager / MD). */
 export function StageActions({ deal }: { deal: DealDetail }) {
   const { role } = useSession();
-  const [mode, setMode] = useState<"IDLE" | "LOST" | "REOPEN" | "PAYMENT" | "WON" | "OFFER">("IDLE");
+  const [mode, setMode] = useState<"IDLE" | "LOST" | "REOPEN" | "PAYMENT" | "WON" | "OFFER" | "MOVE">("IDLE");
   const [lostReason, setLostReason] = useState<LostReason | "">("");
   const [text, setText] = useState("");
 
@@ -140,6 +155,15 @@ export function StageActions({ deal }: { deal: DealDetail }) {
     );
   }
 
+  if (mode === "MOVE") {
+    const target = nextStageOf(deal.stage);
+    return target ? (
+      <InlineForm canSubmit submitLabel={`Move to ${stageLabel(target)}`} onCancel={close} onSubmit={() => void moveDeal(deal, target, { reason: text }).then(close)}>
+        <input autoFocus value={text} onChange={(event) => setText(event.target.value)} placeholder="Reason (optional)" maxLength={500} className={`${FIELD} w-64`} />
+      </InlineForm>
+    ) : null;
+  }
+
   if (mode === "PAYMENT") return <PaymentForm deal={deal} onClose={close} />;
   if (mode === "WON") return <WonForm deal={deal} onClose={close} />;
   if (mode === "OFFER") return <SpecialPriceForm deal={deal} onClose={close} />;
@@ -171,7 +195,7 @@ export function StageActions({ deal }: { deal: DealDetail }) {
         Mark lost
       </Button>
       {canMove && (
-        <Button onClick={() => (needsForm ? setMode(nextStage as "PAYMENT" | "WON") : void moveDeal(deal, nextStage))}>Move to {stageLabel(nextStage)}</Button>
+        <Button onClick={() => setMode(needsForm ? (nextStage as "PAYMENT" | "WON") : "MOVE")}>Move to {stageLabel(nextStage)}</Button>
       )}
     </div>
   );
@@ -231,9 +255,17 @@ export function AiCard({ deal, now }: { deal: DealDetail; now: number | null }) 
           <p className="mt-0.5 text-lg font-light tracking-tight">{deal.ai_enabled ? "On" : `Paused${deal.ai_paused_reason ? ` · ${humanize(deal.ai_paused_reason)}` : ""}`}</p>
         </div>
         {canToggle && (
-          <button onClick={() => void setAiEnabled(deal, !deal.ai_enabled)} className="press shrink-0 rounded-full bg-white px-3.5 py-1.5 text-xs font-semibold text-black hover:bg-neutral-200">
-            {deal.ai_enabled ? "Take over" : "Hand back"}
-          </button>
+          <div className="flex shrink-0 flex-col items-end gap-1.5">
+            <button onClick={() => void setAiEnabled(deal, !deal.ai_enabled)} className="press rounded-full bg-white px-3.5 py-1.5 text-xs font-semibold text-black hover:bg-neutral-200">
+              {deal.ai_enabled ? "Take over" : "Hand back"}
+            </button>
+            {/* AiToggleIn.reason: pause for an exception (something unusual) rather than to take over the chat. */}
+            {deal.ai_enabled && (
+              <button onClick={() => void setAiEnabled(deal, false, "exception")} className="press rounded-full px-3 py-1 text-[11px] text-neutral-400 hover:bg-white/10 hover:text-white">
+                Pause (exception)
+              </button>
+            )}
+          </div>
         )}
       </div>
       {deal.ai_summary && (

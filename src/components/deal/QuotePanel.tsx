@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { can } from "@/config/roles";
+import { ROLE_LABEL, type Role, can } from "@/config/roles";
 import { isClosedStage } from "@/config/stages";
-import { type DealDetail, type QuoteDecision, type QuoteVersion, decideApproval, findOpenApproval, requestQuote, useInbox, useOpenApprovals, useQuotes } from "@/lib/api/crm";
+import { type Approval, type DealDetail, type QuoteDecision, type QuoteVersion, decideApproval, findOpenApproval, requestQuote, useDecidedApprovals, useInbox, useOpenApprovals, useQuotes } from "@/lib/api/crm";
 import { reviseQuote } from "@/lib/api/deal-work";
-import { formatCount, formatDate, formatMoney, formatRelative, humanize } from "@/lib/format";
+import { formatCount, formatDate, formatDateTime, formatMoney, formatRelative, humanize } from "@/lib/format";
 import { useNow } from "@/hooks/useNow";
+import { useStaffNames } from "@/hooks/useStaffNames";
 import { useSession } from "@/store/session";
 import { ManualQuoteForm } from "@/components/quote/ManualQuoteForm";
 import { QuoteCompare } from "@/components/quote/QuoteCompare";
@@ -43,6 +44,36 @@ function ApprovalActions({ approval, dealId }: { approval: { id: string; dueAt: 
           Reject
         </Button>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Who the approval waits for and since when (open), or who decided, when and why (decided). The approvals lists are
+ * for the manager and MD; a salesperson sees their own open approval through the inbox.
+ */
+function ApprovalStatus({ versionId, canList, approvals }: { versionId: string; canList: boolean; approvals: Approval[] | undefined }) {
+  const { data: decided } = useDecidedApprovals(canList);
+  const { nameOf } = useStaffNames();
+  const open = approvals?.find((approval) => approval.quote_version_id === versionId);
+  const last = decided?.find((approval) => approval.quote_version_id === versionId);
+  if (!open && !last) return null;
+  return (
+    <div className="mt-4 space-y-1 text-xs text-neutral-500">
+      {open && (
+        <p>
+          Waiting for {open.assigned_user_id ? `${nameOf(open.assigned_user_id)} (${ROLE_LABEL[open.required_role as Role] ?? humanize(open.required_role)})` : ROLE_LABEL[open.required_role as Role] ?? humanize(open.required_role)}
+          {" · sent "}
+          {formatDateTime(open.submitted_at)} · {humanize(open.kind)}
+        </p>
+      )}
+      {last && (
+        <p>
+          {humanize(last.status)} by {nameOf(last.decided_by ?? last.approver_user_id ?? null)}
+          {last.decided_at && ` · ${formatDateTime(last.decided_at)}`}
+          {last.decision_note && ` · “${last.decision_note}”`}
+        </p>
+      )}
     </div>
   );
 }
@@ -147,16 +178,32 @@ export function QuotePanel({ deal }: { deal: DealDetail }) {
           ["VAT", `${formatMoney(currentQuote.vat_amount, currentQuote.currency)} · ${Number(currentQuote.vat_rate)}%`],
           ["Total", <span key="total" className="font-semibold">{formatMoney(currentQuote.total, currentQuote.currency)}</span>],
           ["Total in AED", currentQuote.currency !== "AED" && formatMoney(currentQuote.total_aed)],
+          ["Exchange rate", currentQuote.fx_rate && `1 ${currentQuote.currency} = ${currentQuote.fx_rate} AED${currentQuote.fx_rate_date ? ` · ${formatDate(currentQuote.fx_rate_date)}` : ""}`],
           ["Incoterm", currentQuote.incoterm],
-          ["Valid until", currentQuote.valid_until && formatDate(currentQuote.valid_until)],
+          ["Valid until", currentQuote.valid_until && `${formatDate(currentQuote.valid_until)} · ${currentQuote.validity_days} days`],
           ["Delivery", [currentQuote.delivery_time_text, currentQuote.delivery_place].filter(Boolean).join(" · ")],
           ["Payment terms", currentQuote.payment_terms_text],
+          ["Quote PDF", currentQuote.pdf_s3_key ? "Ready (sent by the backend)" : "Not made yet"],
+          ["Concessions used", String(deal.concessions_used)],
         ]}
       />
+
+      {currentQuote.cover_note && <p className="mt-4 rounded-2xl bg-black/[0.03] px-4 py-3 text-sm">“{currentQuote.cover_note}”</p>}
+      {currentQuote.clauses.length > 0 && (
+        <div className="mt-4">
+          <p className="mb-1 text-xs text-neutral-500">Clauses</p>
+          <ol className="list-decimal space-y-0.5 pl-5 text-sm text-neutral-700">
+            {currentQuote.clauses.map((clause) => (
+              <li key={clause}>{clause}</li>
+            ))}
+          </ol>
+        </div>
+      )}
 
       {(currentQuote.approver_summary || currentQuote.change_summary) && (
         <p className="mt-4 text-sm text-neutral-600">{currentQuote.change_summary ?? currentQuote.approver_summary}</p>
       )}
+      <ApprovalStatus versionId={currentQuote.id} canList={can(role, "LIST_APPROVALS")} approvals={approvals} />
 
       {openApproval && mode === "VIEW" && <ApprovalActions approval={openApproval} dealId={deal.id} />}
 

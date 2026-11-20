@@ -1,9 +1,9 @@
 "use client";
 
-import { FileDown, FileSpreadsheet, FileUp, History } from "lucide-react";
+import { Boxes, FileDown, FileSpreadsheet, FileUp, History } from "lucide-react";
 import { useRef, useState } from "react";
 import { can } from "@/config/roles";
-import { type ImportResult, type Product, exportPriceList, importPriceList, usePriceListHistory, useProducts } from "@/lib/api/catalogue";
+import { type ImportResult, type Product, exportPriceList, importPriceList, useFilteredProducts, usePriceListHistory, useProducts } from "@/lib/api/catalogue";
 import { humanize } from "@/lib/format";
 import { useStaffNames } from "@/hooks/useStaffNames";
 import { useSession } from "@/store/session";
@@ -12,10 +12,11 @@ import { ExportButtons } from "@/components/ExportButtons";
 import { ChangeHistory } from "@/components/products/ChangeHistory";
 import { ProductPanel } from "@/components/products/ProductPanel";
 import { ProductWorkbook } from "@/components/products/ProductWorkbook";
+import { ErpImport } from "@/components/products/ErpImport";
 import { Button, ErrorState, LoadingState, PageHeader, Section } from "@/components/ui";
 
 const columns: Column<Product>[] = [
-  { label: "Product", cell: (product) => product.name, sub: (product) => product.sku, width: "30%" },
+  { label: "Product", cell: (product) => product.name, sub: (product) => [product.sku, product.custom_printing && "custom printing"].filter(Boolean).join(" · "), width: "30%" },
   { label: "Category", cell: (product) => humanize(product.category_code), width: "16%" },
   { label: "MOQ", cell: (product) => product.moq?.toLocaleString() ?? "—", sub: (product) => product.carton_qty && `Carton ${product.carton_qty}`, width: "14%" },
   { label: "Delivery", cell: (product) => (product.default_lead_days_min !== null ? `${product.default_lead_days_min}–${product.default_lead_days_max} days` : "—"), width: "14%" },
@@ -46,7 +47,12 @@ function ImportResultNote({ result, onClose }: { result: ImportResult; onClose: 
 export function ProductsScreen() {
   const { role } = useSession();
   const { nameOf } = useStaffNames();
-  const { data: products, error } = useProducts();
+  // The full catalogue gives the category list; the table shows the backend's filtered list.
+  const { data: allProducts } = useProducts();
+  const [category, setCategory] = useState("");
+  const [isQuotableOnly, setIsQuotableOnly] = useState(false);
+  const { data: products, error } = useFilteredProducts({ category, quotable: isQuotableOnly });
+  const categories = [...new Set((allProducts ?? []).map((product) => product.category_code))].sort();
   const [search, setSearch] = useState("");
   const [openId, setOpenId] = useState<string | null>(null);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
@@ -56,6 +62,7 @@ export function ProductsScreen() {
   const canEditPrices = can(role, "EDIT_PRICES");
   const canUseWorkbook = can(role, "USE_WORKBOOK");
   const [isWorkbookOpen, setIsWorkbookOpen] = useState(false);
+  const [isErpOpen, setIsErpOpen] = useState(false);
 
   const needle = search.trim().toLowerCase();
   const visible = products?.filter((product) => !needle || `${product.name} ${product.sku} ${product.category_code}`.toLowerCase().includes(needle)) ?? [];
@@ -76,6 +83,22 @@ export function ProductsScreen() {
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <SearchBox value={search} onChange={setSearch} placeholder="Search name, SKU or category" />
+        <select value={category} onChange={(event) => setCategory(event.target.value)} aria-label="Category" className="glass h-10 rounded-full px-4 text-sm shadow-sm outline-none hover:bg-white">
+          <option value="">All categories</option>
+          {categories.map((code) => (
+            <option key={code} value={code}>
+              {humanize(code)}
+            </option>
+          ))}
+        </select>
+        <button
+          type="button"
+          aria-pressed={isQuotableOnly}
+          onClick={() => setIsQuotableOnly((only) => !only)}
+          className={`press h-10 rounded-full px-4 text-sm shadow-sm transition-colors ${isQuotableOnly ? "bg-black font-medium text-white" : "glass text-neutral-600 hover:bg-white"}`}
+        >
+          Quotable only
+        </button>
         <div className="ml-auto flex flex-wrap gap-2">
           <Button variant="secondary" onClick={() => setIsHistoryOpen((open) => !open)}>
             <History className="size-4" /> Price changes
@@ -84,9 +107,14 @@ export function ProductsScreen() {
             <FileDown className="size-4" /> Price list
           </Button>
           {canUseWorkbook && (
-            <Button variant="secondary" onClick={() => setIsWorkbookOpen((open) => !open)}>
-              <FileSpreadsheet className="size-4" /> Product workbook
-            </Button>
+            <>
+              <Button variant="secondary" onClick={() => setIsWorkbookOpen((open) => !open)}>
+                <FileSpreadsheet className="size-4" /> Product workbook
+              </Button>
+              <Button variant="secondary" onClick={() => setIsErpOpen((open) => !open)}>
+                <Boxes className="size-4" /> ERP import
+              </Button>
+            </>
           )}
           {canEditPrices && (
             <>
@@ -99,6 +127,11 @@ export function ProductsScreen() {
         </div>
       </div>
 
+      {isErpOpen && (
+        <div className="mb-4">
+          <ErpImport onClose={() => setIsErpOpen(false)} />
+        </div>
+      )}
       {isWorkbookOpen && (
         <div className="mb-4">
           <ProductWorkbook onClose={() => setIsWorkbookOpen(false)} />

@@ -3,7 +3,6 @@
  * catalogue with price tiers, stock, business settings, FX, channels, templates, material rates, kill switch.
  */
 import type { Schemas } from "@/lib/api/client";
-import type { TemplateVersion } from "@/lib/api/schema-additions";
 import { DEMO_STAFF, unitPriceOf } from "./demo-data";
 import { getState } from "./demo-store";
 
@@ -19,12 +18,12 @@ export interface RecordsState {
   contacts: S["ContactRow"][];
   products: S["ProductRow"][];
   tiers: S["PriceTierOut"][];
-  changes: S["ChangeOut"][];
+  changes: S["kx__crm__api__screens__ChangeOut"][];
   stock: S["StockOut"][];
   settings: S["SettingOut"][];
   fx: S["FxRow"][];
   channels: S["ChannelAccountOut"][];
-  templates: TemplateVersion[];
+  templates: S["TemplateOut"][];
   rates: S["RateOut"][];
   freshness: S["FreshnessOut"][];
   killSwitch: S["KillSwitchIn"]["level"];
@@ -39,7 +38,8 @@ const PRODUCTS: [name: string, sku: string, category: string, capacity: number, 
   ["250ml Sauce Cup", "AP-PP-250C", "sauce_cups", 250, "PP"],
 ];
 
-const id = (kind: string, n: number) => `00000000-0000-4000-e000-${kind.padStart(4, "0")}${String(n).padStart(8, "0")}`;
+// A valid UUID (hex only, as the API requires): the kind letter becomes its character code, e.g. "p" → "0070".
+const id = (kind: string, n: number) => `00000000-0000-4000-e000-${[...kind].map((letter) => letter.charCodeAt(0).toString(16)).join("").slice(-4).padStart(4, "0")}${String(n).padStart(8, "0")}`;
 
 function setting(key: string, value: unknown, description: string, now: number): S["SettingOut"] {
   return { key, value, description, updated_at: toIso(now - 9 * DAY) };
@@ -57,7 +57,7 @@ export function createRecordsState(now: number): RecordsState {
     const companyId = id("c", index + 1);
     const requirement = deal.requirements[0];
     records.companies.push({
-      id: companyId, name: companyByDeal[deal.id], country_code: "IN", city: requirement?.delivery_city ?? null, customer_type: "Food service",
+      id: companyId, name: companyByDeal[deal.id], country_code: "IN", city: requirement?.delivery_city ?? null, customer_type: "caterer",
       vat_trn: null, website: null, notes: null, created_at: toIso(now - (20 + index) * DAY),
     });
     deal.contact.company_id = companyId;
@@ -127,7 +127,7 @@ export function createRecordsState(now: number): RecordsState {
     { id: id("w", 3), channel: "email", provider: "smtp", display_name: "Arifa Pack Sales", address: "sales@arifapack.com", purpose: "sales", status: "active", region: null, countries: [], is_default: true, created_at: toIso(now - 90 * DAY) },
   ];
 
-  const template = (n: number, channel: string, name: string, category: string, status: string, body: string, version = 1, subject: string | null = null): TemplateVersion => ({
+  const template = (n: number, channel: string, name: string, category: string, status: string, body: string, version = 1, subject: string | null = null): S["TemplateOut"] => ({
     id: id("m", n), channel, name, language: "en", category, provider_status: status, subject, body, variables: [...body.matchAll(/\{\{(\w+)\}\}/g)].map((match) => match[1]),
     version, provider_name: version > 1 ? `${name}_v${version}` : name, live: status === "approved", created_by: null, created_at: toIso(now - n * DAY), updated_at: toIso(now - n * DAY),
   });

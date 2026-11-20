@@ -47,6 +47,23 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
 }
 
+/** A content editor works in the CMS only (18 Nov): the CRM shows them a note and Log out instead of the deal screens. */
+export function CrmOnly({ children }: { children: React.ReactNode }) {
+  const { role, logOut } = useSession();
+  if (role !== "content_editor") return children;
+  return (
+    <main className="grid min-h-screen place-items-center px-4">
+      <div className="panel w-full max-w-sm space-y-4 p-8 text-center">
+        <h1 className="text-2xl font-light tracking-tight">This account uses the CMS</h1>
+        <p className="text-sm text-neutral-500">Content editors edit the website in the CMS. The CRM is for the sales team.</p>
+        <button onClick={() => void logOut()} className="press h-11 w-full rounded-full bg-black text-sm font-medium text-white">
+          Log out
+        </button>
+      </div>
+    </main>
+  );
+}
+
 export function useSession(): SessionValue {
   const context = useContext(SessionContext);
   if (!context) throw new Error("useSession must be used inside <SessionProvider>");

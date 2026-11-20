@@ -4,7 +4,7 @@ import { getRecords } from "./demo-records";
 import type { Handler } from "./demo-routes";
 import { type Body, canSee, currentUser, getState, json, nowIso, problem, summaryOf } from "./demo-store";
 
-type Change = Schemas["ChangeOut"];
+type Change = Schemas["kx__crm__api__screens__ChangeOut"];
 
 let nextId = 1;
 const newId = () => `00000000-0000-4000-f000-${String(nextId++).padStart(12, "0")}`;

@@ -3,7 +3,6 @@
 /** §21 dashboards, §20.11 settings (business settings, users, channels, prices, kill switch) and my account. */
 import { api, unwrap, type Schemas } from "./client";
 import { runAction } from "./crm";
-import type { TemplateVersion } from "./schema-additions";
 import { useApi } from "./use-api";
 
 export type SalespersonBoard = Schemas["SalespersonBoard"];
@@ -16,8 +15,8 @@ export type NewStaff = Schemas["UserCreateIn"];
 export type StaffPatch = Schemas["UserPatchIn"];
 export type ChannelAccount = Schemas["ChannelAccountOut"];
 export type ChannelPatch = Schemas["ChannelAccountPatch"];
-/** Every edit is a version (18 Nov); the generated schema doesn't have the version fields yet. */
-export type Template = TemplateVersion;
+/** Every edit is a version (18 Nov): `version`, `provider_name`, `live`. */
+export type Template = Schemas["TemplateOut"];
 export type TemplateInput = Schemas["TemplateIn"];
 export type TemplateStatus = Schemas["TemplateStatusIn"]["provider_status"];
 export type KillSwitchLevel = Schemas["KillSwitchIn"]["level"];
@@ -86,7 +85,7 @@ export function setAvailability(userId: string, isAway: boolean, backupUserId: s
 
 export const useChannelAccounts = () => useApi("channels", async () => unwrap(await api.GET("/v1/admin/channel-accounts")));
 /** Every version, newest first (one call serves both the main table and each template's history). */
-export const useTemplates = () => useApi("templates", async () => unwrap(await api.GET("/v1/admin/message-templates")) as TemplateVersion[]);
+export const useTemplates = () => useApi("templates", async () => unwrap(await api.GET("/v1/admin/message-templates")));
 
 /** The newest version of each template (channel + name + language), with the version being sent next to it. */
 export function currentTemplates(versions: Template[]) {

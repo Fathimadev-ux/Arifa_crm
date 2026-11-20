@@ -18,8 +18,8 @@ export const json = (body: unknown, status = 200) => new Response(JSON.stringify
 export const empty = (status = 204) => new Response(null, { status });
 export const problem = (status: number, detail: string, extra: Body = {}) => json({ type: "about:blank", title: detail, status, detail, ...extra }, status);
 
-export const tokens = (user: StaffMember) => ({
-  access_token: "demo-access-token", token_type: "Bearer", expires_in: 900, mfa: true, amr: ["pwd", "otp"],
+export const tokens = (user: StaffMember, mfa = true) => ({
+  access_token: "demo-access-token", token_type: "Bearer", expires_in: 900, mfa, amr: mfa ? ["pwd", "otp"] : ["pwd", "email"],
   must_change_password: false, totp_enrolled: true, user,
 });
 

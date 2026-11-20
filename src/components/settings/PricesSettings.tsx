@@ -19,7 +19,15 @@ function ProposalRow({ rate, canDecide }: { rate: MaterialRate; canDecide: boole
           {rate.change_pct && <span className="font-normal text-neutral-500"> ({Number(rate.change_pct) > 0 ? "+" : ""}{rate.change_pct}%)</span>}
         </p>
         <p className="text-xs text-neutral-500">
-          {humanize(rate.source)} · {formatDateTime(rate.proposed_at)}
+          {rate.source_url ? (
+            <a href={rate.source_url} target="_blank" rel="noreferrer" className="underline hover:text-black">
+              {humanize(rate.source)}
+            </a>
+          ) : (
+            humanize(rate.source)
+          )}{" "}
+          · {formatDateTime(rate.proposed_at)}
+          {rate.decided_at && ` · decided ${formatDateTime(rate.decided_at)}`}
         </p>
       </div>
       {canDecide && (

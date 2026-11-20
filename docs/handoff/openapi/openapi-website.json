@@ -1,0 +1,1944 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Kairox website API",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/v1/public/sessions": {
+      "post": {
+        "tags": [
+          "website"
+        ],
+        "summary": "Start",
+        "description": "\u00a76 step 1: start a website conversation (Turnstile-checked).",
+        "operationId": "start_v1_public_sessions_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SessionIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/public/sessions/{session_id}/messages": {
+      "post": {
+        "tags": [
+          "website"
+        ],
+        "summary": "Message",
+        "description": "One chat turn (\u00a76 steps 2-6) through the same agents, guard and router as WhatsApp; the page\nmoves with it (D55). `Accept: text/event-stream` streams `action`, `delta`, `done` / `error`.",
+        "operationId": "message_v1_public_sessions__session_id__messages_post",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Session Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MessageIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageOut"
+                }
+              },
+              "text/event-stream": {}
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/public/sessions/{session_id}/voice": {
+      "post": {
+        "tags": [
+          "website"
+        ],
+        "summary": "Voice",
+        "description": "A LiveKit room token for live voice (participant metadata: deal_ref, language, session_id).",
+        "operationId": "voice_v1_public_sessions__session_id__voice_post",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Session Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VoiceOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/public/sessions/{session_id}/identify": {
+      "post": {
+        "tags": [
+          "website"
+        ],
+        "summary": "Identify",
+        "description": "\u00a76 step 7: the visitor typed their phone or email; a returning buyer is recognised now, never\nbefore. The answer does not say whether the buyer was known.",
+        "operationId": "identify_v1_public_sessions__session_id__identify_post",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Session Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IdentifyIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdentifyOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/public/sessions/{session_id}/contact": {
+      "post": {
+        "tags": [
+          "website"
+        ],
+        "summary": "Contact",
+        "description": "The chat's contact card (D59): details plus the WhatsApp / email opt-ins with their wording. The\nsame rules as identify (a typed phone or email is a claim, D-4) and the same answer.",
+        "operationId": "contact_v1_public_sessions__session_id__contact_post",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Session Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContactIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdentifyOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/public/sessions/{session_id}/events": {
+      "post": {
+        "tags": [
+          "website"
+        ],
+        "summary": "Event",
+        "description": "The visitor moved on the site. Their place is saved; the assistant may nudge (rarely, and only\nafter the visitor has spoken: `website/service.py`).",
+        "operationId": "event_v1_public_sessions__session_id__events_post",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Session Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EventIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/public/enquiries": {
+      "post": {
+        "tags": [
+          "website"
+        ],
+        "summary": "Enquiry",
+        "description": "CT-01 enquiry desk (replaces `mailto:`). With a session token the enquiry joins that visit's deal;\nwithout one a Turnstile token is required. The CRM gets English labels (design doc \u00a76).",
+        "operationId": "enquiry_v1_public_enquiries_post",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnquiryIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnquiryOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AddToEnquiry": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "default": ""
+          },
+          "layer": {
+            "type": "string",
+            "enum": [
+              "instant",
+              "agent"
+            ],
+            "title": "Layer",
+            "default": "agent"
+          },
+          "resolved": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Resolved"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "type": "string",
+            "const": "add_to_enquiry",
+            "title": "Type",
+            "default": "add_to_enquiry"
+          },
+          "product_ids": {
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z0-9][a-z0-9_-]{0,127}$"
+            },
+            "type": "array",
+            "maxItems": 10,
+            "minItems": 1,
+            "title": "Product Ids"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "product_ids"
+        ],
+        "title": "AddToEnquiry"
+      },
+      "AskContact": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "default": ""
+          },
+          "layer": {
+            "type": "string",
+            "enum": [
+              "instant",
+              "agent"
+            ],
+            "title": "Layer",
+            "default": "agent"
+          },
+          "resolved": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Resolved"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "type": "string",
+            "const": "ask_contact",
+            "title": "Type",
+            "default": "ask_contact"
+          },
+          "fields": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "name",
+                "company",
+                "phone",
+                "email"
+              ]
+            },
+            "type": "array",
+            "maxItems": 4,
+            "title": "Fields"
+          },
+          "consents": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "whatsapp",
+                "email"
+              ]
+            },
+            "type": "array",
+            "maxItems": 2,
+            "title": "Consents"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "AskContact",
+        "description": "Show the inline contact card in the chat: name / phone / email with the WhatsApp and email consents."
+      },
+      "ContactIn": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "company": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 32
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 320
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "whatsapp_opt_in": {
+            "type": "boolean",
+            "title": "Whatsapp Opt In",
+            "default": false
+          },
+          "email_opt_in": {
+            "type": "boolean",
+            "title": "Email Opt In",
+            "default": false
+          },
+          "consent_wording": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Consent Wording"
+          }
+        },
+        "type": "object",
+        "title": "ContactIn",
+        "description": "The chat's contact card. The opt-ins are separate ticks (never pre-ticked on the site)."
+      },
+      "EnquiryFill": {
+        "properties": {
+          "family": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 8,
+            "title": "Family"
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          },
+          "size": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Size"
+          },
+          "quantity": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quantity"
+          },
+          "often": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Often"
+          },
+          "region": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Region"
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "company": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company"
+          },
+          "trade": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trade"
+          },
+          "channel": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "email",
+                  "call",
+                  "whatsapp"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Channel"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "EnquiryFill",
+        "description": "The enquiry desk's own field names (CT-01, `enquiryDeskClient.ts`). Never a price."
+      },
+      "EnquiryIn": {
+        "properties": {
+          "family": {
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z0-9][a-z0-9_-]{0,127}$"
+            },
+            "type": "array",
+            "maxItems": 8,
+            "title": "Family"
+          },
+          "products": {
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z0-9][a-z0-9_-]{0,127}$"
+            },
+            "type": "array",
+            "maxItems": 50,
+            "title": "Products"
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          },
+          "size": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Size"
+          },
+          "quantity": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quantity"
+          },
+          "often": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Often"
+          },
+          "region": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Region"
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "company": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company"
+          },
+          "trade": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trade"
+          },
+          "channel": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "email",
+                  "call",
+                  "whatsapp"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Channel"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 320
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 32
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          },
+          "extra": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Extra"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          },
+          "locale": {
+            "type": "string",
+            "enum": [
+              "en",
+              "ar"
+            ],
+            "title": "Locale",
+            "default": "en"
+          },
+          "whatsapp_opt_in": {
+            "type": "boolean",
+            "title": "Whatsapp Opt In",
+            "default": false
+          },
+          "email_opt_in": {
+            "type": "boolean",
+            "title": "Email Opt In",
+            "default": false
+          },
+          "consent_wording": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Consent Wording"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Id"
+          },
+          "turnstile_token": {
+            "type": "string",
+            "maxLength": 4096,
+            "title": "Turnstile Token",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "title": "EnquiryIn",
+        "description": "The enquiry desk's fields (their own names), the enquiry list and the consents."
+      },
+      "EnquiryOut": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok",
+            "default": true
+          },
+          "reference": {
+            "type": "string",
+            "title": "Reference"
+          }
+        },
+        "type": "object",
+        "required": [
+          "reference"
+        ],
+        "title": "EnquiryOut"
+      },
+      "EventIn": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "page_view",
+              "product_open",
+              "product_dwell",
+              "enquiry_add",
+              "idle"
+            ],
+            "title": "Type"
+          },
+          "context": {
+            "$ref": "#/components/schemas/SiteContext"
+          },
+          "seconds": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 86400.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seconds"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "context"
+        ],
+        "title": "EventIn"
+      },
+      "EventOut": {
+        "properties": {
+          "reply": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reply"
+          },
+          "actions": {
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/ShowFamily"
+                },
+                {
+                  "$ref": "#/components/schemas/ShowProduct"
+                },
+                {
+                  "$ref": "#/components/schemas/Navigate"
+                },
+                {
+                  "$ref": "#/components/schemas/ScrollTo"
+                },
+                {
+                  "$ref": "#/components/schemas/FactoryTour"
+                },
+                {
+                  "$ref": "#/components/schemas/AddToEnquiry"
+                },
+                {
+                  "$ref": "#/components/schemas/FillEnquiry"
+                },
+                {
+                  "$ref": "#/components/schemas/AskContact"
+                }
+              ],
+              "discriminator": {
+                "propertyName": "type",
+                "mapping": {
+                  "add_to_enquiry": "#/components/schemas/AddToEnquiry",
+                  "ask_contact": "#/components/schemas/AskContact",
+                  "factory_tour": "#/components/schemas/FactoryTour",
+                  "fill_enquiry": "#/components/schemas/FillEnquiry",
+                  "navigate": "#/components/schemas/Navigate",
+                  "scroll_to": "#/components/schemas/ScrollTo",
+                  "show_family": "#/components/schemas/ShowFamily",
+                  "show_product": "#/components/schemas/ShowProduct"
+                }
+              }
+            },
+            "type": "array",
+            "maxItems": 3,
+            "title": "Actions"
+          }
+        },
+        "type": "object",
+        "title": "EventOut"
+      },
+      "FactoryTour": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "default": ""
+          },
+          "layer": {
+            "type": "string",
+            "enum": [
+              "instant",
+              "agent"
+            ],
+            "title": "Layer",
+            "default": "agent"
+          },
+          "resolved": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Resolved"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "type": "string",
+            "const": "factory_tour",
+            "title": "Type",
+            "default": "factory_tour"
+          },
+          "chapter": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-z0-9][a-z0-9_-]{0,127}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chapter"
+          },
+          "seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seconds"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "FactoryTour"
+      },
+      "FillEnquiry": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "default": ""
+          },
+          "layer": {
+            "type": "string",
+            "enum": [
+              "instant",
+              "agent"
+            ],
+            "title": "Layer",
+            "default": "agent"
+          },
+          "resolved": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Resolved"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "type": "string",
+            "const": "fill_enquiry",
+            "title": "Type",
+            "default": "fill_enquiry"
+          },
+          "fill": {
+            "$ref": "#/components/schemas/EnquiryFill"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "fill"
+        ],
+        "title": "FillEnquiry"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "IdentifyIn": {
+        "properties": {
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 32
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 320
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "title": "IdentifyIn"
+      },
+      "IdentifyOut": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok",
+            "default": true
+          }
+        },
+        "type": "object",
+        "title": "IdentifyOut"
+      },
+      "MessageIn": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Text"
+          },
+          "language": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 16
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language"
+          },
+          "context": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SiteContext"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "text"
+        ],
+        "title": "MessageIn"
+      },
+      "MessageOut": {
+        "properties": {
+          "reply": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reply"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language"
+          },
+          "handed_over": {
+            "type": "boolean",
+            "title": "Handed Over"
+          },
+          "actions": {
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/ShowFamily"
+                },
+                {
+                  "$ref": "#/components/schemas/ShowProduct"
+                },
+                {
+                  "$ref": "#/components/schemas/Navigate"
+                },
+                {
+                  "$ref": "#/components/schemas/ScrollTo"
+                },
+                {
+                  "$ref": "#/components/schemas/FactoryTour"
+                },
+                {
+                  "$ref": "#/components/schemas/AddToEnquiry"
+                },
+                {
+                  "$ref": "#/components/schemas/FillEnquiry"
+                },
+                {
+                  "$ref": "#/components/schemas/AskContact"
+                }
+              ],
+              "discriminator": {
+                "propertyName": "type",
+                "mapping": {
+                  "add_to_enquiry": "#/components/schemas/AddToEnquiry",
+                  "ask_contact": "#/components/schemas/AskContact",
+                  "factory_tour": "#/components/schemas/FactoryTour",
+                  "fill_enquiry": "#/components/schemas/FillEnquiry",
+                  "navigate": "#/components/schemas/Navigate",
+                  "scroll_to": "#/components/schemas/ScrollTo",
+                  "show_family": "#/components/schemas/ShowFamily",
+                  "show_product": "#/components/schemas/ShowProduct"
+                }
+              }
+            },
+            "type": "array",
+            "maxItems": 3,
+            "title": "Actions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "reply",
+          "language",
+          "handed_over"
+        ],
+        "title": "MessageOut"
+      },
+      "Navigate": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "default": ""
+          },
+          "layer": {
+            "type": "string",
+            "enum": [
+              "instant",
+              "agent"
+            ],
+            "title": "Layer",
+            "default": "agent"
+          },
+          "resolved": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Resolved"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "type": "string",
+            "const": "navigate",
+            "title": "Type",
+            "default": "navigate"
+          },
+          "page": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9_-]{0,127}$",
+            "title": "Page"
+          },
+          "section": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9-]{0,63}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Section"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "page"
+        ],
+        "title": "Navigate"
+      },
+      "Resolved": {
+        "properties": {
+          "path_en": {
+            "type": "string",
+            "title": "Path En"
+          },
+          "path_ar": {
+            "type": "string",
+            "title": "Path Ar"
+          },
+          "anchor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Anchor"
+          }
+        },
+        "type": "object",
+        "required": [
+          "path_en",
+          "path_ar"
+        ],
+        "title": "Resolved",
+        "description": "Where the action lands, in both site languages (filled by the server, never by the model)."
+      },
+      "ScrollTo": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "default": ""
+          },
+          "layer": {
+            "type": "string",
+            "enum": [
+              "instant",
+              "agent"
+            ],
+            "title": "Layer",
+            "default": "agent"
+          },
+          "resolved": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Resolved"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "type": "string",
+            "const": "scroll_to",
+            "title": "Type",
+            "default": "scroll_to"
+          },
+          "section": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]{0,63}$",
+            "title": "Section"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "section"
+        ],
+        "title": "ScrollTo"
+      },
+      "SessionIn": {
+        "properties": {
+          "turnstile_token": {
+            "type": "string",
+            "maxLength": 4096,
+            "title": "Turnstile Token",
+            "default": ""
+          },
+          "language": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 16
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language"
+          },
+          "voice_consent": {
+            "type": "boolean",
+            "title": "Voice Consent",
+            "default": false
+          },
+          "cookie_consent": {
+            "type": "boolean",
+            "title": "Cookie Consent",
+            "default": false
+          },
+          "country_code": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[A-Z]{2}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Country Code"
+          },
+          "context": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SiteContext"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "title": "SessionIn"
+      },
+      "SessionOut": {
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Session Id"
+          },
+          "session_token": {
+            "type": "string",
+            "title": "Session Token"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Expires At"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language"
+          },
+          "voice_available": {
+            "type": "boolean",
+            "title": "Voice Available"
+          }
+        },
+        "type": "object",
+        "required": [
+          "session_id",
+          "session_token",
+          "expires_at",
+          "language",
+          "voice_available"
+        ],
+        "title": "SessionOut"
+      },
+      "ShowFamily": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "default": ""
+          },
+          "layer": {
+            "type": "string",
+            "enum": [
+              "instant",
+              "agent"
+            ],
+            "title": "Layer",
+            "default": "agent"
+          },
+          "resolved": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Resolved"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "type": "string",
+            "const": "show_family",
+            "title": "Type",
+            "default": "show_family"
+          },
+          "family": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9_-]{0,127}$",
+            "title": "Family"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "family"
+        ],
+        "title": "ShowFamily"
+      },
+      "ShowProduct": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "default": ""
+          },
+          "layer": {
+            "type": "string",
+            "enum": [
+              "instant",
+              "agent"
+            ],
+            "title": "Layer",
+            "default": "agent"
+          },
+          "resolved": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Resolved"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "type": "string",
+            "const": "show_product",
+            "title": "Type",
+            "default": "show_product"
+          },
+          "product_id": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9_-]{0,127}$",
+            "title": "Product Id"
+          },
+          "view": {
+            "type": "string",
+            "enum": [
+              "quick",
+              "page"
+            ],
+            "title": "View",
+            "default": "quick"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "product_id"
+        ],
+        "title": "ShowProduct"
+      },
+      "SiteContext": {
+        "properties": {
+          "path": {
+            "type": "string",
+            "maxLength": 300,
+            "title": "Path",
+            "default": "/"
+          },
+          "page": {
+            "type": "string",
+            "enum": [
+              "home",
+              "products",
+              "product",
+              "about",
+              "quality",
+              "clients",
+              "contact",
+              "other"
+            ],
+            "title": "Page",
+            "default": "home"
+          },
+          "locale": {
+            "type": "string",
+            "enum": [
+              "en",
+              "ar"
+            ],
+            "title": "Locale",
+            "default": "en"
+          },
+          "family": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-z0-9][a-z0-9_-]{0,127}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Family"
+          },
+          "product_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-z0-9][a-z0-9_-]{0,127}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Product Id"
+          },
+          "quick_view_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-z0-9][a-z0-9_-]{0,127}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quick View Id"
+          },
+          "section": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9-]{0,63}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Section"
+          },
+          "enquiry_list": {
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z0-9][a-z0-9_-]{0,127}$"
+            },
+            "type": "array",
+            "maxItems": 50,
+            "title": "Enquiry List"
+          },
+          "input": {
+            "type": "string",
+            "enum": [
+              "text",
+              "voice"
+            ],
+            "title": "Input",
+            "default": "text"
+          }
+        },
+        "type": "object",
+        "title": "SiteContext",
+        "description": "Where the visitor is right now (sent with every message and every page or product change)."
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "VoiceOut": {
+        "properties": {
+          "livekit_url": {
+            "type": "string",
+            "title": "Livekit Url"
+          },
+          "token": {
+            "type": "string",
+            "title": "Token"
+          },
+          "room": {
+            "type": "string",
+            "title": "Room"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Expires At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "livekit_url",
+          "token",
+          "room",
+          "language",
+          "expires_at"
+        ],
+        "title": "VoiceOut"
+      }
+    }
+  }
+}

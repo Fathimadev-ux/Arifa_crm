@@ -12,13 +12,15 @@ interface TierDraft {
   maxQty: string;
   listPrice: string;
   minPrice: string;
+  /** Only when adding a tier (PriceTierIn.valid_from); empty = from now. */
+  validFrom: string;
 }
 
-const EMPTY_DRAFT: TierDraft = { minQty: "", maxQty: "", listPrice: "", minPrice: "" };
-const draftOf = (tier: PriceTier): TierDraft => ({ minQty: tier.min_qty, maxQty: tier.max_qty ?? "", listPrice: tier.list_price, minPrice: tier.min_price ?? "" });
+const EMPTY_DRAFT: TierDraft = { minQty: "", maxQty: "", listPrice: "", minPrice: "", validFrom: "" };
+const draftOf = (tier: PriceTier): TierDraft => ({ minQty: tier.min_qty, maxQty: tier.max_qty ?? "", listPrice: tier.list_price, minPrice: tier.min_price ?? "", validFrom: "" });
 const isValid = (draft: TierDraft) => Number(draft.minQty) > 0 && Number(draft.listPrice) > 0 && (!draft.maxQty || Number(draft.maxQty) > Number(draft.minQty));
 
-function TierInputs({ draft, onChange }: { draft: TierDraft; onChange: (draft: TierDraft) => void }) {
+function TierInputs({ draft, isNew, onChange }: { draft: TierDraft; isNew: boolean; onChange: (draft: TierDraft) => void }) {
   const field = (key: keyof TierDraft, label: string) => (
     <input type="number" min="0" step="any" value={draft[key]} onChange={(event) => onChange({ ...draft, [key]: event.target.value })} placeholder={label} aria-label={label} className={INPUT} />
   );
@@ -27,7 +29,10 @@ function TierInputs({ draft, onChange }: { draft: TierDraft; onChange: (draft: T
       <td className="px-1 py-1.5">{field("minQty", "From qty")}</td>
       <td className="px-1 py-1.5">{field("maxQty", "To qty")}</td>
       <td className="px-1 py-1.5">{field("listPrice", "List price")}</td>
-      <td className="px-1 py-1.5">{field("minPrice", "Minimum")}</td>
+      <td className="space-y-1.5 px-1 py-1.5">
+        {field("minPrice", "Minimum")}
+        {isNew && <input type="date" value={draft.validFrom} onChange={(event) => onChange({ ...draft, validFrom: event.target.value })} aria-label="Valid from (empty = now)" title="Valid from (empty = now)" className={INPUT} />}
+      </td>
     </>
   );
 }
@@ -47,7 +52,7 @@ export function PriceTiers({ product, canEdit }: { product: Product; canEdit: bo
   const save = async () => {
     const values = { min_qty: draft.minQty, max_qty: draft.maxQty || null, list_price: draft.listPrice, min_price: draft.minPrice || null };
     const tier = tiers?.find((item) => item.id === editingId);
-    const result = tier ? await editPriceTier(tier, values) : await addPriceTier(product, values);
+    const result = tier ? await editPriceTier(tier, values) : await addPriceTier(product, { ...values, valid_from: draft.validFrom ? new Date(`${draft.validFrom}T00:00:00`).toISOString() : null });
     if (result) stopEdit();
   };
 
@@ -80,7 +85,7 @@ export function PriceTiers({ product, canEdit }: { product: Product; canEdit: bo
           {tiers.map((tier) =>
             editingId === tier.id ? (
               <tr key={tier.id}>
-                <TierInputs draft={draft} onChange={setDraft} />
+                <TierInputs draft={draft} isNew={false} onChange={setDraft} />
                 {editActions}
               </tr>
             ) : (
@@ -109,7 +114,7 @@ export function PriceTiers({ product, canEdit }: { product: Product; canEdit: bo
           )}
           {editingId === "new" && (
             <tr>
-              <TierInputs draft={draft} onChange={setDraft} />
+              <TierInputs draft={draft} isNew onChange={setDraft} />
               {editActions}
             </tr>
           )}

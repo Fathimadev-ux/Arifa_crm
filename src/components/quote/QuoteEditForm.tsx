@@ -26,6 +26,8 @@ export function QuoteEditForm({ version, title, onSubmit, onCancel }: { version:
     payment_terms_text: version.payment_terms_text ?? "",
   }));
   const [incoterm, setIncoterm] = useState(version.incoterm);
+  const [currency, setCurrency] = useState(version.currency);
+  const [coverNote, setCoverNote] = useState(version.cover_note ?? "");
   const [note, setNote] = useState("");
   const [buyerNote, setBuyerNote] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -44,6 +46,8 @@ export function QuoteEditForm({ version, title, onSubmit, onCancel }: { version:
     const edits: QuoteEdits = { lines: changedLines };
     for (const term of TERMS) if (terms[term] !== (version[term] ?? "")) edits[term] = terms[term] || null;
     if (incoterm !== version.incoterm) edits.incoterm = incoterm as QuoteEdits["incoterm"];
+    if (currency !== version.currency) edits.currency = currency;
+    if (coverNote !== (version.cover_note ?? "")) edits.cover_note = coverNote.trim() || null;
     if (note.trim()) edits.note = note.trim();
     if (buyerNote.trim()) edits.buyer_note = buyerNote.trim();
     return edits;
@@ -51,7 +55,7 @@ export function QuoteEditForm({ version, title, onSubmit, onCancel }: { version:
 
   const edits = buildEdits();
   const hasChanges = (edits.lines?.length ?? 0) > 0 || Object.keys(edits).length > 1;
-  const linesValid = lines.every((line) => Number(line.unitPrice) > 0 && Number(line.quantity) > 0);
+  const linesValid = lines.every((line) => Number(line.unitPrice) > 0 && Number(line.quantity) > 0) && /^[A-Z]{3}$/.test(currency);
 
   const submit = async () => {
     setIsSaving(true);
@@ -83,7 +87,9 @@ export function QuoteEditForm({ version, title, onSubmit, onCancel }: { version:
           <TextInput key={term} label={TERM_LABEL[term]} value={terms[term]} onChange={(event) => setTerms((current) => ({ ...current, [term]: event.target.value }))} maxLength={term === "payment_terms_text" ? 1000 : 300} />
         ))}
         <Select label="Incoterm" value={incoterm} onChange={(event) => setIncoterm(event.target.value)} options={INCOTERMS.map((value) => ({ value, label: value }))} />
+        <TextInput label="Currency (3 letters)" value={currency} onChange={(event) => setCurrency(event.target.value.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 3))} />
       </div>
+      <TextArea label="Cover note on the quote (optional)" value={coverNote} onChange={(event) => setCoverNote(event.target.value)} maxLength={500} rows={2} />
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <TextArea label="Note for the approver (optional)" value={note} onChange={(event) => setNote(event.target.value)} maxLength={2000} />

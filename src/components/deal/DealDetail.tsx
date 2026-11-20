@@ -132,7 +132,9 @@ export function DealDetail({ id }: { id: string }) {
               items={[
                 ["Name", contact.full_name],
                 ["Phone", contact.phone_e164],
+                ["Phone status", contact.phone_status && `${humanize(contact.phone_status)}${contact.phone_status_at ? ` · ${formatDate(contact.phone_status_at)}` : ""}`],
                 ["WhatsApp", contact.whatsapp_e164],
+                ["WhatsApp name", contact.whatsapp_profile_name],
                 ["Email", contact.email],
                 ["Prefers", contact.preferred_channel && channelLabel(contact.preferred_channel)],
                 ["Language", contact.language],

@@ -5,6 +5,7 @@ import { useState } from "react";
 import { type ChangeRequest, declineRequest, resolveRequest, reviseForRequest } from "@/lib/api/change-requests";
 import { useQuoteVersion } from "@/lib/api/deal-work";
 import { humanize } from "@/lib/format";
+import { useStaffNames } from "@/hooks/useStaffNames";
 import { FormCard, TextArea } from "@/components/forms";
 import { QuoteEditForm } from "@/components/quote/QuoteEditForm";
 import { Button, enterDelay } from "@/components/ui";
@@ -25,6 +26,7 @@ type Mode = "VIEW" | "REVISE" | "DECLINE";
 
 /** The §13.2 card: the buyer's words, what changes, and the actions (revise, decline, resolve). */
 export function RequestCard({ request, dealNumber, index = 0 }: { request: ChangeRequest; dealNumber?: string; index?: number }) {
+  const { nameOf } = useStaffNames();
   const [mode, setMode] = useState<Mode>("VIEW");
   const [reason, setReason] = useState("");
   const [revisedVersionId, setRevisedVersionId] = useState<string | null>(null);
@@ -70,6 +72,7 @@ export function RequestCard({ request, dealNumber, index = 0 }: { request: Chang
       )}
 
       {request.ai_notes && <p className="text-xs text-neutral-500">AI: {request.ai_notes}</p>}
+      {request.assigned_to && <p className="text-xs text-neutral-500">Handled by {nameOf(request.assigned_to)}</p>}
       {request.decline_reason && <p className="text-sm">Declined: {request.decline_reason}</p>}
 
       {isOpen && mode === "VIEW" && (

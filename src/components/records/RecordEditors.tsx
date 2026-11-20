@@ -11,6 +11,19 @@ const CHANNELS = [
   { value: "phone", label: "Phone" },
 ];
 
+type CustomerType = NonNullable<CompanyInput["customer_type"]>;
+/** The backend accepts only these customer types (openapi-crm.json, 18 Nov). */
+const CUSTOMER_TYPES: { value: CustomerType | ""; label: string }[] = [
+  { value: "", label: "Not set" },
+  { value: "distributor", label: "Distributor" },
+  { value: "restaurant_chain", label: "Restaurant chain" },
+  { value: "caterer", label: "Caterer" },
+  { value: "airline", label: "Airline" },
+  { value: "retailer", label: "Retailer" },
+  { value: "manufacturer", label: "Manufacturer" },
+  { value: "other", label: "Other" },
+];
+
 const optional = (value: string) => value.trim() || null;
 
 /** Name, designation, company, preferred channel, language, time zone. Phone and email change through the deal. */
@@ -57,7 +70,8 @@ export function CompanyEditor({ company, onClose }: { company: Company | null; o
     name: company?.name ?? "",
     country_code: company?.country_code ?? "",
     city: company?.city ?? "",
-    customer_type: company?.customer_type ?? "",
+    // An old free-text value that isn't in the list shows as "Not set" until someone picks one.
+    customer_type: (CUSTOMER_TYPES.some((option) => option.value === company?.customer_type) ? company?.customer_type : "") as CustomerType | "",
     vat_trn: company?.vat_trn ?? "",
     website: company?.website ?? "",
     notes: company?.notes ?? "",
@@ -70,7 +84,7 @@ export function CompanyEditor({ company, onClose }: { company: Company | null; o
       name: form.name.trim(),
       country_code: optional(form.country_code),
       city: optional(form.city),
-      customer_type: optional(form.customer_type),
+      customer_type: form.customer_type || null,
       vat_trn: optional(form.vat_trn),
       website: optional(form.website),
       notes: optional(form.notes),
@@ -82,7 +96,7 @@ export function CompanyEditor({ company, onClose }: { company: Company | null; o
     <FormCard title={company ? company.name : "New company"} submitLabel={company ? "Save" : "Add company"} canSubmit={form.name.trim() !== "" && countryValid} onSubmit={save} onCancel={onClose}>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <TextInput label="Name" autoFocus={!company} value={form.name} onChange={(event) => update({ name: event.target.value })} maxLength={300} />
-        <TextInput label="Customer type" placeholder="Caterer, restaurant…" value={form.customer_type} onChange={(event) => update({ customer_type: event.target.value })} maxLength={64} />
+        <Select label="Customer type" value={form.customer_type} onChange={(event) => update({ customer_type: event.target.value as CustomerType | "" })} options={CUSTOMER_TYPES} />
         <TextInput label="Country (2 letters)" placeholder="AE" value={form.country_code} onChange={(event) => update({ country_code: event.target.value.toUpperCase() })} maxLength={2} />
         <TextInput label="City" value={form.city} onChange={(event) => update({ city: event.target.value })} maxLength={200} />
         <TextInput label="VAT / TRN" value={form.vat_trn} onChange={(event) => update({ vat_trn: event.target.value })} maxLength={64} />

@@ -16,24 +16,31 @@ const LEVELS: { id: KillSwitchLevel; label: string; stops: string }[] = [
 export function KillSwitchPanel({ canSet }: { canSet: boolean }) {
   const { data: state } = useKillSwitch();
   if (!state) return <LoadingState />;
+  // What the backend says is stopped at this level.
+  const stopped = [state.marketing_stopped && "marketing messages", state.calls_stopped && "AI calls", state.voice_stopped && "voice", state.all_held && "every outgoing message (held)"].filter(Boolean);
   return (
-    <ul className="animate-enter grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
-      {LEVELS.map((level) => {
-        const isCurrent = state.level === level.id;
-        return (
-          <li key={level.id}>
-            <button
-              disabled={!canSet || isCurrent}
-              onClick={() => void setKillSwitch(level.id)}
-              aria-pressed={isCurrent}
-              className={`lift h-full w-full rounded-[1.75rem] p-5 text-left transition-colors disabled:cursor-default ${isCurrent ? "panel-dark" : "panel hover:bg-white"}`}
-            >
-              <p className="text-lg font-medium tracking-tight">{level.label}</p>
-              <p className={`mt-1 text-sm ${isCurrent ? "text-neutral-300" : "text-neutral-500"}`}>{level.stops}</p>
-            </button>
-          </li>
-        );
-      })}
-    </ul>
+    <div className="space-y-3">
+      <p className="animate-enter px-1 text-sm">
+        <span className="font-semibold">Stopped now:</span> {stopped.length ? stopped.join(", ") : "nothing, everything runs normally"}
+      </p>
+      <ul className="animate-enter grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        {LEVELS.map((level) => {
+          const isCurrent = state.level === level.id;
+          return (
+            <li key={level.id}>
+              <button
+                disabled={!canSet || isCurrent}
+                onClick={() => void setKillSwitch(level.id)}
+                aria-pressed={isCurrent}
+                className={`lift h-full w-full rounded-[1.75rem] p-5 text-left transition-colors disabled:cursor-default ${isCurrent ? "panel-dark" : "panel hover:bg-white"}`}
+              >
+                <p className="text-lg font-medium tracking-tight">{level.label}</p>
+                <p className={`mt-1 text-sm ${isCurrent ? "text-neutral-300" : "text-neutral-500"}`}>{level.stops}</p>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
   );
 }

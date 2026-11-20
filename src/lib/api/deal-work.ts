@@ -86,11 +86,11 @@ export function setTakeover(deal: Deal, takeOver: boolean) {
 export const useDealOrder = (dealId: string, isWon: boolean) =>
   useApi(isWon ? `orders:${dealId}` : null, async () => unwrap(await api.GET("/v1/orders", { params: { query: { limit: 100 } } })).items.find((order) => order.deal_id === dealId) ?? null);
 
-/** §15.3 order tracking: ready → shipped → delivered. */
-export function updateOrderStatus(order: Order, status: OrderStatus, trackingRef?: string) {
+/** §15.3 order tracking: ready → shipped → delivered (or cancelled); `onDate` is the day it happened (empty = today). */
+export function updateOrderStatus(order: Order, status: OrderStatus, trackingRef?: string, onDate?: string) {
   return runAction(
     async () => {
-      const result = unwrap(await api.PATCH("/v1/deals/orders/{order_id}", { params: { path: { order_id: order.id } }, body: { status, tracking_ref: trackingRef || null } }));
+      const result = unwrap(await api.PATCH("/v1/deals/orders/{order_id}", { params: { path: { order_id: order.id } }, body: { status, on_date: onDate || null, tracking_ref: trackingRef || null } }));
       revalidate(`orders:${order.deal_id}`, "orders:list");
       return result;
     },

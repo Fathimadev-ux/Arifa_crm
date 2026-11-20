@@ -1,10 +1,12 @@
 "use client";
 
-import { Bell, CalendarDays, Search } from "lucide-react";
+import { Bell, CalendarDays, Search, ShieldAlert } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import Link from "next/link";
 import { useCallback, useRef, useState, useSyncExternalStore } from "react";
+import { hasMfaSession } from "@/lib/api/client";
 import { useInbox } from "@/lib/api/crm";
+import { useSession } from "@/store/session";
 import { isDemoMode, subscribeDemoMode } from "@/lib/demo/demo-api";
 import { formatRelative, formatToday, humanize } from "@/lib/format";
 import { useDismiss } from "@/hooks/useDismiss";
@@ -91,10 +93,23 @@ function DatePill() {
   );
 }
 
+/** An emailed-code sign-in (mfa false) can't approve, change prices or settings, confirm payment or mark Won. */
+function EmailCodeNotice() {
+  const { user } = useSession();
+  // Wait for the signed-in person, so a reload's token renewal has finished first.
+  if (!user || hasMfaSession()) return null;
+  return (
+    <Link href="/account" className="press hidden h-11 items-center gap-2 rounded-full bg-black px-4 text-xs font-medium text-white shadow-sm lg:flex" title="Set up or use the authenticator app">
+      <ShieldAlert className="size-4" /> Signed in with an email code: approvals need the authenticator app
+    </Link>
+  );
+}
+
 export function TopBar() {
   return (
     <header className="flex items-center justify-between gap-2 px-1 pt-1 pb-5 md:px-4 md:pb-7">
       <DatePill />
+      <EmailCodeNotice />
       <div className="flex flex-1 items-center justify-end gap-2">
         <button
           onClick={openCommandPalette}

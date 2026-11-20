@@ -1,0 +1,553 @@
+{
+  "info": {
+    "name": "Kairox CRM (Arifa Pack)",
+    "_postman_id": "b6f2b7d4-0c55-4b8e-9d0a-18c0f0a1e7a1",
+    "description": "Sign in ONCE: run '1 Sign in', then '2a Send email code' + '2b Verify email code', or '2c Authenticator code' (approvals need 2c). After that every request renews the 15-minute access token by itself (collection pre-request script) until the session ends 12 hours after sign-in. Set base_url, email and password in the collection variables. Full API: docs/frontend/CRM_API.md.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Kairox CRM: renew the 15-minute access token before it runs out (sign in once with \"1 Sign in\" + a step 2).",
+          "(() => {",
+          "  const path = pm.request.url.getPath();",
+          "  if (path.startsWith('/v1/auth/')) { return; }  // sign-in calls renew nothing",
+          "  const refresh = pm.collectionVariables.get('refresh_token');",
+          "  if (!refresh) { console.warn('Not signed in: run \"1 Sign in\", then \"2a\" or \"2b/2c\".'); return; }",
+          "  const expiresAt = Number(pm.collectionVariables.get('access_expires_at') || 0);",
+          "  if (pm.collectionVariables.get('access_token') && Date.now() < expiresAt - 60000) { return; }",
+          "  pm.sendRequest({",
+          "    url: pm.collectionVariables.get('base_url') + '/v1/auth/refresh',",
+          "    method: 'POST',",
+          "    header: { 'Content-Type': 'application/json' },",
+          "    body: { mode: 'raw', raw: JSON.stringify({ refresh_token: refresh }) }",
+          "  }, (err, res) => {",
+          "    if (err || res.code !== 200) {",
+          "      console.warn('The session has ended (12 hours after sign-in, or signed out): run \"1 Sign in\" again.');",
+          "      pm.collectionVariables.unset('access_token');",
+          "      pm.collectionVariables.unset('refresh_token');",
+          "      return;",
+          "    }",
+          "    const body = res.json();",
+          "    pm.collectionVariables.set('access_token', body.access_token);",
+          "    pm.collectionVariables.set('access_expires_at', String(Date.now() + body.expires_in * 1000));",
+          "    const cookie = res.cookies && res.cookies.get('kx_refresh');",
+          "    const next = cookie && cookie.value !== undefined ? cookie.value : cookie;",
+          "    if (next) { pm.collectionVariables.set('refresh_token', next); }  // it rotates on every renewal",
+          "    console.log('Access token renewed automatically.');",
+          "  });",
+          "})();"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000"
+    },
+    {
+      "key": "email",
+      "value": "md@arifapack.test"
+    },
+    {
+      "key": "password",
+      "value": ""
+    },
+    {
+      "key": "new_password",
+      "value": ""
+    },
+    {
+      "key": "mfa_code",
+      "value": ""
+    },
+    {
+      "key": "challenge_token",
+      "value": ""
+    },
+    {
+      "key": "access_token",
+      "value": ""
+    },
+    {
+      "key": "access_expires_at",
+      "value": ""
+    },
+    {
+      "key": "refresh_token",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Sign in (once per 12 hours)",
+      "item": [
+        {
+          "name": "1 Sign in",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(() => {",
+                  "  if (pm.response.code !== 200) { return; }",
+                  "  const body = pm.response.json();",
+                  "  pm.collectionVariables.set('challenge_token', body.challenge_token);",
+                  "  pm.test('step 1 done: now run 2a (email code) or 2b (authenticator)', () => pm.expect(body.methods).to.be.an('array'));",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2a Send email code",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/auth/mfa/email/send",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "auth",
+                "mfa",
+                "email",
+                "send"
+              ]
+            },
+            "description": "A 6-digit code goes to the work email (valid 10 minutes); put it in mfa_code.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"challenge_token\": \"{{challenge_token}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "2b Verify email code",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/auth/mfa/email/verify",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "auth",
+                "mfa",
+                "email",
+                "verify"
+              ]
+            },
+            "description": "Signed in with mfa=false: everything except approvals and other MFA-only actions.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"challenge_token\": \"{{challenge_token}}\",\n  \"code\": \"{{mfa_code}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Keep the access token, its expiry and the (rotating) refresh token for the auto-renewal.",
+                  "(() => {",
+                  "  if (pm.response.code !== 200) { return; }",
+                  "  const body = pm.response.json();",
+                  "  pm.collectionVariables.set('access_token', body.access_token);",
+                  "  pm.collectionVariables.set('access_expires_at', String(Date.now() + body.expires_in * 1000));",
+                  "  const next = pm.cookies.get('kx_refresh');",
+                  "  if (next) { pm.collectionVariables.set('refresh_token', next); }",
+                  "  pm.test('signed in', () => pm.expect(body.access_token).to.be.a('string'));",
+                  "  if (body.must_change_password) {",
+                  "    console.warn('One-time password: run \"3 Change password\" first (other routes answer 403 until then).');",
+                  "  }",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2c Authenticator code",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/auth/mfa/totp",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "auth",
+                "mfa",
+                "totp"
+              ]
+            },
+            "description": "Signed in with mfa=true (needed for approvals, price list, settings).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"challenge_token\": \"{{challenge_token}}\",\n  \"code\": \"{{mfa_code}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Keep the access token, its expiry and the (rotating) refresh token for the auto-renewal.",
+                  "(() => {",
+                  "  if (pm.response.code !== 200) { return; }",
+                  "  const body = pm.response.json();",
+                  "  pm.collectionVariables.set('access_token', body.access_token);",
+                  "  pm.collectionVariables.set('access_expires_at', String(Date.now() + body.expires_in * 1000));",
+                  "  const next = pm.cookies.get('kx_refresh');",
+                  "  if (next) { pm.collectionVariables.set('refresh_token', next); }",
+                  "  pm.test('signed in', () => pm.expect(body.access_token).to.be.a('string'));",
+                  "  if (body.must_change_password) {",
+                  "    console.warn('One-time password: run \"3 Change password\" first (other routes answer 403 until then).');",
+                  "  }",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3 Change password (first sign-in)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/auth/password",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "auth",
+                "password"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"current_password\": \"{{password}}\",\n  \"new_password\": \"{{new_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Renew now (normally automatic)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/auth/refresh",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "auth",
+                "refresh"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Keep the access token, its expiry and the (rotating) refresh token for the auto-renewal.",
+                  "(() => {",
+                  "  if (pm.response.code !== 200) { return; }",
+                  "  const body = pm.response.json();",
+                  "  pm.collectionVariables.set('access_token', body.access_token);",
+                  "  pm.collectionVariables.set('access_expires_at', String(Date.now() + body.expires_in * 1000));",
+                  "  const next = pm.cookies.get('kx_refresh');",
+                  "  if (next) { pm.collectionVariables.set('refresh_token', next); }",
+                  "  pm.test('signed in', () => pm.expect(body.access_token).to.be.a('string'));",
+                  "  if (body.must_change_password) {",
+                  "    console.warn('One-time password: run \"3 Change password\" first (other routes answer 403 until then).');",
+                  "  }",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Who am I",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/auth/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "auth",
+                "me"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Sign out",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/auth/logout",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "auth",
+                "logout"
+              ]
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(() => {",
+                  "  pm.collectionVariables.unset('access_token');",
+                  "  pm.collectionVariables.unset('refresh_token');",
+                  "  pm.collectionVariables.unset('access_expires_at');",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Examples (the token is renewed before each one)",
+      "item": [
+        {
+          "name": "My inbox",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/inbox",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "inbox"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Deals",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/deals",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "deals"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Products",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/products",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "products"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Message texts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/texts",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "texts"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Company details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/company",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "company"
+              ]
+            },
+            "description": ""
+          }
+        }
+      ]
+    }
+  ]
+}

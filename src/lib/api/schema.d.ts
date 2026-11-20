@@ -115,7 +115,8 @@ export interface paths {
         put?: never;
         /**
          * Logout
-         * @description End this browser's session: the refresh token is revoked and its cookie cleared.
+         * @description End this session: the refresh token (cookie) and the session the access token names are revoked
+         *     and the cookie cleared.
          */
         post: operations["logout_v1_auth_logout_post"];
         delete?: never;
@@ -155,7 +156,8 @@ export interface paths {
         put?: never;
         /**
          * Totp Enrol
-         * @description A new authenticator seed for the signed-in user (active only after /totp/confirm).
+         * @description A new authenticator seed for the signed-in user (active only after /totp/confirm). Replacing an
+         *     active authenticator needs a TOTP sign-in (D4) and the user is told by email.
          */
         post: operations["totp_enrol_v1_auth_totp_enrol_post"];
         delete?: never;
@@ -215,7 +217,9 @@ export interface paths {
         put?: never;
         /**
          * Reset Start
-         * @description Recovery: a code to the work address. Always 202 (nobody learns which addresses exist).
+         * @description Recovery: a code to the work address. Always 202 (nobody learns which addresses exist); 429 when
+         *     the rate limit for this IP or this typed address is reached (the same for unknown addresses, M3).
+         *     L6: the code is mailed after the response, so a real address answers as fast as an unknown one.
          */
         post: operations["reset_start_v1_auth_password_reset_start_post"];
         delete?: never;
@@ -662,7 +666,9 @@ export interface paths {
         /**
          * Order Status
          * @description §15.3 order tracking: in production -> ready -> shipped -> delivered (the buyer is told if
-         *     configured).
+         *     configured). §3 / §5 step 14: the deal's salesperson (or the colleague covering them) updates it, as
+         *     do the manager and the MD; cancelling an order is not in the SRS's salesperson list, so it stays with
+         *     the manager / MD.
          */
         patch: operations["order_status_v1_deals_orders__order_id__patch"];
         trace?: never;
@@ -1121,6 +1127,135 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/catalogue/workbook": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download
+         * @description Download the current catalogue (products, price tiers, categories, how-to sheet). Staff edit this
+         *     file and upload it back; it contains minimum prices, so only manager / MD / admin get it.
+         */
+        get: operations["download_v1_catalogue_workbook_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/catalogue/workbook/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview
+         * @description Body: the .xlsx file. Saves nothing: returns every change and every error (sheet, row, column),
+         *     plus the `token` that `apply` needs.
+         */
+        post: operations["preview_v1_catalogue_workbook_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/catalogue/workbook/apply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Apply
+         * @description Body: the SAME .xlsx file as the preview; `token` from the preview. Saves everything or nothing.
+         *     409 when the catalogue changed since the preview (preview again); 422 when the file has errors.
+         */
+        post: operations["apply_v1_catalogue_workbook_apply_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/catalogue/erp-import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import Erp
+         * @description D61: body = the ERP stock list (CSV or .xlsx with the columns Category, Item Description, Brand,
+         *     Unit, OpnStk, In, Out, ClosStk). Every row is kept (packing and raw material too, marked not
+         *     sellable); codes are made from description + unit; closing stock is saved; new sellable items are
+         *     linked to their website product where it is safe. Prices are never touched. `dry_run=true` shows
+         *     what would change and saves nothing.
+         */
+        post: operations["import_erp_v1_catalogue_erp_import_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/catalogue/products/{sku}/website-link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Website Link
+         * @description Link an ERP item (a variant) to its website product, or unlink it (null): when the automatic
+         *     match was not sure, or was wrong.
+         */
+        put: operations["set_website_link_v1_catalogue_products__sku__website_link_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/catalogue/website-products/{cms_product_id}/variants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Website Variants
+         * @description The sellable variants of a website product, as the AI describes them (availability word, the
+         *     quantities where a better price starts; no amounts).
+         */
+        get: operations["website_variants_v1_catalogue_website_products__cms_product_id__variants_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/price-proposals": {
         parameters: {
             query?: never;
@@ -1303,6 +1438,56 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/company": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Show
+         * @description The company details printed on quotes and summaries, and what staff have set.
+         */
+        get: operations["show_v1_company_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Edit
+         * @description Admin / MD / manager (MFA): change details; live on new quotes within 30 seconds. A change of bank
+         *     details alerts the MD and the manager. 422 `invalid_company` lists the fields that are wrong (TRN 15
+         *     digits, IBAN checksum, SWIFT, email, phone).
+         */
+        patch: operations["edit_v1_company_patch"];
+        trace?: never;
+    };
+    "/v1/company/logo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Upload Logo
+         * @description Body: the PNG or JPEG file itself (`Content-Type: image/png` or `image/jpeg`), max 200 KB.
+         */
+        put: operations["upload_logo_v1_company_logo_put"];
+        post?: never;
+        /**
+         * Remove Logo
+         * @description Remove the logo from quotes.
+         */
+        delete: operations["remove_logo_v1_company_logo_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/admin/kill-switch": {
         parameters: {
             query?: never;
@@ -1381,7 +1566,8 @@ export interface paths {
         };
         /**
          * Companies
-         * @description §20.6 companies: search by name, newest first.
+         * @description §20.6 companies: search by name, newest first. A salesperson sees the companies of their own deals'
+         *     contacts and companies nobody is linked to yet (L3).
          */
         get: operations["companies_v1_companies_get"];
         put?: never;
@@ -1411,7 +1597,7 @@ export interface paths {
         head?: never;
         /**
          * Edit Company
-         * @description Edit a company record (logged).
+         * @description Edit a company record (logged); a salesperson only a company they may see (L3).
          */
         patch: operations["edit_company_v1_companies__company_id__patch"];
         trace?: never;
@@ -1575,11 +1761,116 @@ export interface paths {
         };
         /**
          * Export
-         * @description §20.12: a list as CSV or XLSX (a salesperson exports only their own deals and orders).
+         * @description §20.12: a list as CSV or XLSX (a salesperson exports only their own deals and orders; Admin / IT
+         *     only the product list, L4: §3 gives it users, settings and the catalogue, not customer data).
          */
         get: operations["export_v1_exports__entity__get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/texts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Texts
+         * @description Every editable text: the English in use, the built-in English, its placeholders and the state of
+         *     each language. Legal and opt-out wording is not here (not editable).
+         */
+        get: operations["list_texts_v1_texts_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/texts/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Edit
+         * @description Manager / MD (MFA): new English text, live within 30 seconds; buyer and AI texts are then
+         *     translated by the AI. 422 `invalid_text` when a placeholder is missing or added, or an amount with a
+         *     currency is in it.
+         */
+        put: operations["edit_v1_texts__key__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/texts/{key}/reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reset
+         * @description Manager / MD (MFA): back to the built-in wording in every language (the history keeps the
+         *     edits).
+         */
+        post: operations["reset_v1_texts__key__reset_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/texts/{key}/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * History
+         * @description Every change of one text, newest first: who, when, old and new text (the MD's view).
+         */
+        get: operations["history_v1_texts__key__history_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/texts/translate-missing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Translate Missing
+         * @description Manager / MD (MFA): queue AI translations for every text without one (built-in texts included).
+         */
+        post: operations["translate_missing_v1_texts_translate_missing_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1635,12 +1926,16 @@ export interface paths {
         };
         /**
          * Templates
-         * @description §20.11 message templates and Meta's approval state (only approved WhatsApp ones can be sent).
+         * @description §20.11 message templates and Meta's approval state, every version (the history), newest first;
+         *     `live` marks the version being sent. `current_only=true`: the newest version of each template.
          */
         get: operations["templates_v1_admin_message_templates_get"];
         /**
          * Upsert Template
-         * @description Add or change a template. A WhatsApp template waits for Meta's approval (`submitted`).
+         * @description Add or change a template. Editing the live (approved) WhatsApp version creates a NEW version that
+         *     waits for Meta under its own name; the approved one keeps sending until Meta approves the new one.
+         *     A version not yet approved (draft, submitted, rejected) is changed in place. Email templates go live
+         *     at once (no provider approval); the previous email version is kept as history.
          */
         put: operations["upsert_template_v1_admin_message_templates_put"];
         post?: never;
@@ -1661,7 +1956,8 @@ export interface paths {
         put?: never;
         /**
          * Template Status
-         * @description Record Meta's decision on a WhatsApp template (only `approved` templates can be sent).
+         * @description Record Meta's decision on a WhatsApp template version. Approving it makes it the one that is sent;
+         *     the version sent before becomes `superseded` (kept as history).
          */
         post: operations["template_status_v1_admin_message_templates__template_id__status_post"];
         delete?: never;
@@ -1708,6 +2004,19 @@ export interface components {
              * @enum {string}
              */
             reason: "human_takeover" | "md_takeover" | "opt_out" | "exception";
+        };
+        /** AppliedOut */
+        AppliedOut: {
+            /** Products Created */
+            products_created: number;
+            /** Products Updated */
+            products_updated: number;
+            /** Price Lists Changed */
+            price_lists_changed: number;
+            /** Categories Changed */
+            categories_changed: number;
+            /** Website Drafts */
+            website_drafts: number;
         };
         /** ApprovalOut */
         ApprovalOut: {
@@ -1758,6 +2067,17 @@ export interface components {
             /** Backup User Id */
             backup_user_id?: string | null;
         };
+        /** BankIn */
+        BankIn: {
+            /** Account Name */
+            account_name?: string | null;
+            /** Bank Name */
+            bank_name?: string | null;
+            /** Iban */
+            iban?: string | null;
+            /** Swift */
+            swift?: string | null;
+        };
         /** CallIn */
         CallIn: {
             /** Client Key */
@@ -1770,6 +2090,15 @@ export interface components {
              * Format: uuid
              */
             call_id: string;
+        };
+        /** CategoryChangeOut */
+        CategoryChangeOut: {
+            /** Code */
+            code: string;
+            /** Is New */
+            is_new: boolean;
+            /** Changes */
+            changes: components["schemas"]["FieldChangeOut"][];
         };
         /** ChallengeIn */
         ChallengeIn: {
@@ -1789,35 +2118,6 @@ export interface components {
              * Format: date-time
              */
             expires_at: string;
-        };
-        /**
-         * ChangeOut
-         * @description One logged change (§3 "every change is logged"): who, when, what, old and new value.
-         */
-        ChangeOut: {
-            /**
-             * At
-             * Format: date-time
-             */
-            at: string;
-            /** Actor Type */
-            actor_type: string;
-            /** Actor Id */
-            actor_id: string;
-            /** Action */
-            action: string;
-            /** Entity Type */
-            entity_type: string;
-            /** Entity Id */
-            entity_id: string;
-            /** Before */
-            before: {
-                [key: string]: unknown;
-            } | null;
-            /** After */
-            after: {
-                [key: string]: unknown;
-            } | null;
         };
         /**
          * ChangeRequestOut
@@ -1920,22 +2220,18 @@ export interface components {
             /** Code */
             code: string;
         };
-        /** CompanyIn */
-        CompanyIn: {
-            /** Name */
-            name: string;
-            /** Country Code */
-            country_code?: string | null;
-            /** City */
-            city?: string | null;
-            /** Customer Type */
-            customer_type?: string | null;
-            /** Vat Trn */
-            vat_trn?: string | null;
-            /** Website */
-            website?: string | null;
-            /** Notes */
-            notes?: string | null;
+        /** CompanyOut */
+        CompanyOut: {
+            /** Saved */
+            saved: {
+                [key: string]: unknown;
+            };
+            /** Printed */
+            printed: {
+                [key: string]: unknown;
+            };
+            /** Has Logo */
+            has_logo: boolean;
         };
         /** CompanyRow */
         CompanyRow: {
@@ -2169,6 +2465,36 @@ export interface components {
             /** Reason */
             reason: string;
         };
+        /** ErpImportOut */
+        ErpImportOut: {
+            /** Rows */
+            rows: number;
+            /** Created */
+            created: number;
+            /** Updated */
+            updated: number;
+            /** Sellable */
+            sellable: number;
+            /** Not Sellable */
+            not_sellable: number;
+            /** Linked To Website */
+            linked_to_website: number;
+            /** Ambiguous Links */
+            ambiguous_links: number;
+            /** Errors */
+            errors: string[];
+            /** Saved */
+            saved: boolean;
+        };
+        /** FieldChangeOut */
+        FieldChangeOut: {
+            /** Field */
+            field: string;
+            /** Before */
+            before: unknown;
+            /** After */
+            after: unknown;
+        };
         /** FlagIn */
         FlagIn: {
             /** Enabled */
@@ -2249,6 +2575,17 @@ export interface components {
             /** Overdue */
             overdue: boolean;
         };
+        /** IssueOut */
+        IssueOut: {
+            /** Sheet */
+            sheet: string;
+            /** Row */
+            row: number;
+            /** Column */
+            column: string;
+            /** Message */
+            message: string;
+        };
         /** KillSwitchIn */
         KillSwitchIn: {
             /**
@@ -2272,6 +2609,15 @@ export interface components {
             voice_stopped: boolean;
             /** All Held */
             all_held: boolean;
+        };
+        /** LanguageOut */
+        LanguageOut: {
+            /** Language */
+            language: string;
+            /** Status */
+            status: string;
+            /** Text */
+            text: string | null;
         };
         /**
          * LineCostOut
@@ -2616,6 +2962,24 @@ export interface components {
             /** Paid On */
             paid_on: string | null;
         };
+        /** PreviewOut */
+        PreviewOut: {
+            /** Token */
+            token: string;
+            /** Ok */
+            ok: boolean;
+            summary: components["schemas"]["SummaryOut"];
+            /** Errors */
+            errors: components["schemas"]["IssueOut"][];
+            /** Warnings */
+            warnings: components["schemas"]["IssueOut"][];
+            /** Products */
+            products: components["schemas"]["ProductChangeOut"][];
+            /** Price Lists */
+            price_lists: components["schemas"]["TierChangeOut"][];
+            /** Categories */
+            categories: components["schemas"]["CategoryChangeOut"][];
+        };
         /** PriceTierIn */
         PriceTierIn: {
             /** Min Qty */
@@ -2667,6 +3031,19 @@ export interface components {
             list_price?: number | string | null;
             /** Min Price */
             min_price?: number | string | null;
+        };
+        /** ProductChangeOut */
+        ProductChangeOut: {
+            /** Code */
+            code: string;
+            /** Row */
+            row: number;
+            /** Is New */
+            is_new: boolean;
+            /** Changes */
+            changes: components["schemas"]["FieldChangeOut"][];
+            /** Website Draft */
+            website_draft: boolean;
         };
         /**
          * ProductEditIn
@@ -2728,6 +3105,11 @@ export interface components {
             /** Cms Synced At */
             cms_synced_at: string | null;
         };
+        /** QueuedOut */
+        QueuedOut: {
+            /** Queued */
+            queued: number;
+        };
         /**
          * QuoteEditsIn
          * @description §11.3 "Edit then approve" / §13.3 "Revise quote": only the fields that change.
@@ -2752,6 +3134,8 @@ export interface components {
             buyer_note?: string | null;
             /** Cover Note */
             cover_note?: string | null;
+            /** Currency */
+            currency?: string | null;
         };
         /** QuoteLineOut */
         QuoteLineOut: {
@@ -3094,6 +3478,21 @@ export interface components {
             /** Unit */
             unit: string;
         };
+        /** SummaryOut */
+        SummaryOut: {
+            /** New Products */
+            new_products: number;
+            /** Updated Products */
+            updated_products: number;
+            /** Unchanged Products */
+            unchanged_products: number;
+            /** Price Lists Changed */
+            price_lists_changed: number;
+            /** Categories Changed */
+            categories_changed: number;
+            /** Website Drafts */
+            website_drafts: number;
+        };
         /** TemplateIn */
         TemplateIn: {
             /**
@@ -3141,6 +3540,22 @@ export interface components {
             body: string;
             /** Variables */
             variables: string[];
+            /** Version */
+            version: number;
+            /** Provider Name */
+            provider_name: string | null;
+            /**
+             * Live
+             * @default false
+             */
+            live: boolean;
+            /** Created By */
+            created_by: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
             /**
              * Updated At
              * Format: date-time
@@ -3153,7 +3568,44 @@ export interface components {
              * Provider Status
              * @enum {string}
              */
-            provider_status: "draft" | "submitted" | "approved" | "rejected" | "paused";
+            provider_status: "draft" | "submitted" | "approved" | "rejected" | "paused" | "superseded";
+        };
+        /** TextIn */
+        TextIn: {
+            /** Text */
+            text: string;
+        };
+        /** TextOut */
+        TextOut: {
+            /** Key */
+            key: string;
+            /** Group */
+            group: string;
+            /** Note */
+            note: string;
+            /** Placeholders */
+            placeholders: string[];
+            /** Builtin En */
+            builtin_en: string;
+            /** En */
+            en: string;
+            /** En Version */
+            en_version: number;
+            /** Updated By */
+            updated_by: string | null;
+            /** Updated At */
+            updated_at: string | null;
+            /** Languages */
+            languages: components["schemas"]["LanguageOut"][];
+        };
+        /** TierChangeOut */
+        TierChangeOut: {
+            /** Code */
+            code: string;
+            /** Before */
+            before: (string | null)[][];
+            /** After */
+            after: (string | null)[][];
         };
         /** TimelineOut */
         TimelineOut: {
@@ -3255,7 +3707,7 @@ export interface components {
              * Role
              * @enum {string}
              */
-            role: "md" | "manager" | "admin" | "sales";
+            role: "md" | "manager" | "admin" | "sales" | "content_editor";
             /** Phone E164 */
             phone_e164?: string | null;
             /**
@@ -3301,7 +3753,7 @@ export interface components {
             /** Full Name */
             full_name?: string | null;
             /** Role */
-            role?: ("md" | "manager" | "admin" | "sales") | null;
+            role?: ("md" | "manager" | "admin" | "sales" | "content_editor") | null;
             /** Phone E164 */
             phone_e164?: string | null;
             /** Is Active */
@@ -3328,10 +3780,119 @@ export interface components {
             /** Context */
             ctx?: Record<string, never>;
         };
+        /** VariantOut */
+        VariantOut: {
+            /** Sku */
+            sku: string;
+            /** Description */
+            description: string;
+            /** Packing */
+            packing: string | null;
+            /** Unit */
+            unit: string;
+            /** Availability */
+            availability: string;
+            /** Moq */
+            moq: number | null;
+            /** Quantity Breaks */
+            quantity_breaks: string[];
+            /** Quotable */
+            quotable: boolean;
+        };
+        /** WebsiteLinkIn */
+        WebsiteLinkIn: {
+            /** Cms Product Id */
+            cms_product_id: string | null;
+        };
         /** WonIn */
         WonIn: {
             /** Expected Reorder Date */
             expected_reorder_date?: string | null;
+        };
+        /**
+         * CompanyIn
+         * @description Only the fields to change; "" clears a field (company.yaml's value is printed again).
+         */
+        kx__crm__api__company__CompanyIn: {
+            /** Name */
+            name?: string | null;
+            /** Address */
+            address?: string | null;
+            /** Trn */
+            trn?: string | null;
+            /** Phone */
+            phone?: string | null;
+            /** Email */
+            email?: string | null;
+            bank?: components["schemas"]["BankIn"] | null;
+        };
+        /** CompanyIn */
+        kx__crm__api__records__CompanyIn: {
+            /** Name */
+            name: string;
+            /** Country Code */
+            country_code?: string | null;
+            /** City */
+            city?: string | null;
+            /** Customer Type */
+            customer_type?: ("distributor" | "restaurant_chain" | "caterer" | "airline" | "retailer" | "manufacturer" | "other") | null;
+            /** Vat Trn */
+            vat_trn?: string | null;
+            /** Website */
+            website?: string | null;
+            /** Notes */
+            notes?: string | null;
+        };
+        /**
+         * ChangeOut
+         * @description One logged change (§3 "every change is logged"): who, when, what, old and new value.
+         */
+        kx__crm__api__screens__ChangeOut: {
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            /** Actor Type */
+            actor_type: string;
+            /** Actor Id */
+            actor_id: string;
+            /** Action */
+            action: string;
+            /** Entity Type */
+            entity_type: string;
+            /** Entity Id */
+            entity_id: string;
+            /** Before */
+            before: {
+                [key: string]: unknown;
+            } | null;
+            /** After */
+            after: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /** ChangeOut */
+        kx__crm__api__texts__ChangeOut: {
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            /** Actor Type */
+            actor_type: string;
+            /** Actor Id */
+            actor_id: string;
+            /** Action */
+            action: string;
+            /** Before */
+            before: {
+                [key: string]: unknown;
+            } | null;
+            /** After */
+            after: {
+                [key: string]: unknown;
+            } | null;
         };
     };
     responses: never;
@@ -5258,7 +5819,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ChangeOut"][];
+                    "application/json": components["schemas"]["kx__crm__api__screens__ChangeOut"][];
                 };
             };
             /** @description Validation Error */
@@ -5291,7 +5852,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ChangeOut"][];
+                    "application/json": components["schemas"]["kx__crm__api__screens__ChangeOut"][];
                 };
             };
             /** @description Validation Error */
@@ -5358,6 +5919,202 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StockOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    download_v1_catalogue_workbook_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_v1_catalogue_workbook_preview_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PreviewOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    apply_v1_catalogue_workbook_apply_post: {
+        parameters: {
+            query: {
+                token: string;
+            };
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AppliedOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    import_erp_v1_catalogue_erp_import_post: {
+        parameters: {
+            query?: {
+                dry_run?: boolean;
+            };
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErpImportOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_website_link_v1_catalogue_products__sku__website_link_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                sku: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WebsiteLinkIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    website_variants_v1_catalogue_website_products__cms_product_id__variants_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                cms_product_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VariantOut"][];
                 };
             };
             /** @description Validation Error */
@@ -5682,6 +6439,134 @@ export interface operations {
             };
         };
     };
+    show_v1_company_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompanyOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    edit_v1_company_patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["kx__crm__api__company__CompanyIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompanyOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upload_logo_v1_company_logo_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompanyOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_logo_v1_company_logo_delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompanyOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_level_v1_admin_kill_switch_get: {
         parameters: {
             query?: never;
@@ -5899,7 +6784,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["CompanyIn"];
+                "application/json": components["schemas"]["kx__crm__api__records__CompanyIn"];
             };
         };
         responses: {
@@ -5936,7 +6821,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["CompanyIn"];
+                "application/json": components["schemas"]["kx__crm__api__records__CompanyIn"];
             };
         };
         responses: {
@@ -6303,6 +7188,173 @@ export interface operations {
             };
         };
     };
+    list_texts_v1_texts_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TextOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    edit_v1_texts__key__put: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TextIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TextOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reset_v1_texts__key__reset_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TextOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    history_v1_texts__key__history_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["kx__crm__api__texts__ChangeOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    translate_missing_v1_texts_translate_missing_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QueuedOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     accounts_v1_admin_channel_accounts_get: {
         parameters: {
             query?: never;
@@ -6373,7 +7425,9 @@ export interface operations {
     };
     templates_v1_admin_message_templates_get: {
         parameters: {
-            query?: never;
+            query?: {
+                current_only?: boolean;
+            };
             header?: {
                 authorization?: string | null;
             };

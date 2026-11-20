@@ -1,0 +1,2682 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Kairox CMS API",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/v1/content/site": {
+      "get": {
+        "tags": [
+          "content"
+        ],
+        "summary": "Site",
+        "description": "Site settings: company name, phones, emails, addresses, hours, social links, announcement bar,\ntheme colours and fonts, the assistant's fixed texts, and whether product pages (PG-03) are live.",
+        "operationId": "site_v1_content_site_get",
+        "parameters": [
+          {
+            "name": "locale",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "en",
+                "ar"
+              ],
+              "type": "string",
+              "description": "en, or ar (Arabic laid over English)",
+              "default": "en",
+              "title": "Locale"
+            },
+            "description": "en, or ar (Arabic laid over English)"
+          },
+          {
+            "name": "preview",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 4096
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Preview token: show the drafts",
+              "title": "Preview"
+            },
+            "description": "Preview token: show the drafts"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContentDoc"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/content/manifest": {
+      "get": {
+        "tags": [
+          "content"
+        ],
+        "summary": "Site Manifest",
+        "description": "D55: the site map the AI assistant uses (pages and their section ids, families with their names and\nsynonyms in six languages, products with their paths, factory-tour chapters). The website's instant\nnavigation (layer 0) reads the same data.",
+        "operationId": "site_manifest_v1_content_manifest_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteManifest"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/content/pages/{slug}": {
+      "get": {
+        "tags": [
+          "content"
+        ],
+        "summary": "Page",
+        "description": "One page with its section blocks (home, products, about, quality, clients, contact, privacy).",
+        "operationId": "page_v1_content_pages__slug__get",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          },
+          {
+            "name": "locale",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "en",
+                "ar"
+              ],
+              "type": "string",
+              "description": "en, or ar (Arabic laid over English)",
+              "default": "en",
+              "title": "Locale"
+            },
+            "description": "en, or ar (Arabic laid over English)"
+          },
+          {
+            "name": "preview",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 4096
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Preview token: show the drafts",
+              "title": "Preview"
+            },
+            "description": "Preview token: show the drafts"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContentDoc"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/content/families": {
+      "get": {
+        "tags": [
+          "content"
+        ],
+        "summary": "Families",
+        "description": "The product families, in their display order (HM-01, HM-04, PR-02).",
+        "operationId": "families_v1_content_families_get",
+        "parameters": [
+          {
+            "name": "locale",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "en",
+                "ar"
+              ],
+              "type": "string",
+              "description": "en, or ar (Arabic laid over English)",
+              "default": "en",
+              "title": "Locale"
+            },
+            "description": "en, or ar (Arabic laid over English)"
+          },
+          {
+            "name": "preview",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 4096
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Preview token: show the drafts",
+              "title": "Preview"
+            },
+            "description": "Preview token: show the drafts"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContentList"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/content/products": {
+      "get": {
+        "tags": [
+          "content"
+        ],
+        "summary": "Products",
+        "description": "The catalogue (PR-03), in catalogue order; filters as on the site: `family`, `q`, `range`.",
+        "operationId": "products_v1_content_products_get",
+        "parameters": [
+          {
+            "name": "locale",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "en",
+                "ar"
+              ],
+              "type": "string",
+              "description": "en, or ar (Arabic laid over English)",
+              "default": "en",
+              "title": "Locale"
+            },
+            "description": "en, or ar (Arabic laid over English)"
+          },
+          {
+            "name": "family",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 40
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Family"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Search code, reference or name",
+              "title": "Q"
+            },
+            "description": "Search code, reference or name"
+          },
+          {
+            "name": "range",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^(trade|self)$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Range"
+            }
+          },
+          {
+            "name": "preview",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 4096
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Preview token: show the drafts",
+              "title": "Preview"
+            },
+            "description": "Preview token: show the drafts"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContentList"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/content/products/{product_id}": {
+      "get": {
+        "tags": [
+          "content"
+        ],
+        "summary": "Product",
+        "description": "PG-03: one product with its family, previous / next in the catalogue (PD-04) and up to four more\nfrom the same family (PD-05).",
+        "operationId": "product_v1_content_products__product_id__get",
+        "parameters": [
+          {
+            "name": "product_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Product Id"
+            }
+          },
+          {
+            "name": "locale",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "en",
+                "ar"
+              ],
+              "type": "string",
+              "description": "en, or ar (Arabic laid over English)",
+              "default": "en",
+              "title": "Locale"
+            },
+            "description": "en, or ar (Arabic laid over English)"
+          },
+          {
+            "name": "preview",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 4096
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Preview token: show the drafts",
+              "title": "Preview"
+            },
+            "description": "Preview token: show the drafts"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/content/collections/{collection}": {
+      "get": {
+        "tags": [
+          "content"
+        ],
+        "summary": "Collection",
+        "description": "Any other collection, in display order: `tour_chapters` (HM-05), `stations` (QA-02), `faqs`,\n`certificates` (QA-04), `clients` (CL-02), `industries` (CL-01), `stories` (CL-03), `leadership`\n(AB-05, AB-06).",
+        "operationId": "collection_v1_content_collections__collection__get",
+        "parameters": [
+          {
+            "name": "collection",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Collection"
+            }
+          },
+          {
+            "name": "locale",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "en",
+                "ar"
+              ],
+              "type": "string",
+              "description": "en, or ar (Arabic laid over English)",
+              "default": "en",
+              "title": "Locale"
+            },
+            "description": "en, or ar (Arabic laid over English)"
+          },
+          {
+            "name": "preview",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 4096
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Preview token: show the drafts",
+              "title": "Preview"
+            },
+            "description": "Preview token: show the drafts"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContentList"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/content/sitemap": {
+      "get": {
+        "tags": [
+          "content"
+        ],
+        "summary": "Sitemap",
+        "description": "Every published page, family and product, in English and Arabic, for `/sitemap.xml` (\u00a79).",
+        "operationId": "sitemap_v1_content_sitemap_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SitemapEntry"
+                  },
+                  "type": "array",
+                  "title": "Response Sitemap V1 Content Sitemap Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/content/redirects": {
+      "get": {
+        "tags": [
+          "content"
+        ],
+        "summary": "Redirects",
+        "description": "Old-site addresses that move permanently to their new page (design doc \u00a79): each product's\n`legacy_paths` (e.g. `/8325.php`) to its page (or its quick view until PG-03 is live).",
+        "operationId": "redirects_v1_content_redirects_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Redirect"
+                  },
+                  "type": "array",
+                  "title": "Response Redirects V1 Content Redirects Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/cms/collections": {
+      "get": {
+        "tags": [
+          "cms"
+        ],
+        "summary": "Collections",
+        "description": "Every content type with its JSON Schema (fields, types, limits), to draw the editor forms.",
+        "operationId": "collections_v1_cms_collections_get",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CollectionInfo"
+                  },
+                  "title": "Response Collections V1 Cms Collections Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/cms/collections/{collection}": {
+      "get": {
+        "tags": [
+          "cms"
+        ],
+        "summary": "List Documents",
+        "description": "The documents of one content type, in display order, with their state (draft / published /\nchanged = live with unpublished edits).",
+        "operationId": "list_documents_v1_cms_collections__collection__get",
+        "parameters": [
+          {
+            "name": "collection",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Collection"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DocumentSummary"
+                  },
+                  "title": "Response List Documents V1 Cms Collections  Collection  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/cms/collections/{collection}/{key}": {
+      "get": {
+        "tags": [
+          "cms"
+        ],
+        "summary": "Get Document",
+        "description": "One document: its open draft (with `revision`, needed to save) and its live version.",
+        "operationId": "get_document_v1_cms_collections__collection___key__get",
+        "parameters": [
+          {
+            "name": "collection",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Collection"
+            }
+          },
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Key"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "cms"
+        ],
+        "summary": "Save Draft",
+        "description": "Save the draft (creates the document when new). Send the `revision` you loaded; if a colleague\nsaved meanwhile the answer is 409 and nothing is overwritten. Prices are refused (422 `cms_price`).",
+        "operationId": "save_draft_v1_cms_collections__collection___key__put",
+        "parameters": [
+          {
+            "name": "collection",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Collection"
+            }
+          },
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Key"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveDraftIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VersionOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/cms/collections/{collection}/{key}/publish": {
+      "post": {
+        "tags": [
+          "cms"
+        ],
+        "summary": "Publish",
+        "description": "Put the draft live. The website re-renders the affected pages within about a minute; the AI's\nknowledge and the CRM product record follow automatically.",
+        "operationId": "publish_v1_cms_collections__collection___key__publish_post",
+        "parameters": [
+          {
+            "name": "collection",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Collection"
+            }
+          },
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Key"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublishIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VersionOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/cms/collections/{collection}/{key}/unpublish": {
+      "post": {
+        "tags": [
+          "cms"
+        ],
+        "summary": "Unpublish",
+        "description": "Take the document off the website (versions are kept; publish again to bring it back).",
+        "operationId": "unpublish_v1_cms_collections__collection___key__unpublish_post",
+        "parameters": [
+          {
+            "name": "collection",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Collection"
+            }
+          },
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Key"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/cms/collections/{collection}/{key}/draft": {
+      "delete": {
+        "tags": [
+          "cms"
+        ],
+        "summary": "Discard Draft",
+        "description": "Throw the open draft away (a document that was never published disappears with it).",
+        "operationId": "discard_draft_v1_cms_collections__collection___key__draft_delete",
+        "parameters": [
+          {
+            "name": "collection",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Collection"
+            }
+          },
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Key"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/cms/collections/{collection}/{key}/versions": {
+      "get": {
+        "tags": [
+          "cms"
+        ],
+        "summary": "Versions",
+        "description": "Every version, newest first (each publish is kept).",
+        "operationId": "versions_v1_cms_collections__collection___key__versions_get",
+        "parameters": [
+          {
+            "name": "collection",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Collection"
+            }
+          },
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Key"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/VersionSummary"
+                  },
+                  "title": "Response Versions V1 Cms Collections  Collection   Key  Versions Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/cms/collections/{collection}/{key}/versions/{number}/restore": {
+      "post": {
+        "tags": [
+          "cms"
+        ],
+        "summary": "Restore",
+        "description": "Copy an earlier version into the draft; publish it to go live again.",
+        "operationId": "restore_v1_cms_collections__collection___key__versions__number__restore_post",
+        "parameters": [
+          {
+            "name": "collection",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Collection"
+            }
+          },
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Key"
+            }
+          },
+          {
+            "name": "number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Number"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VersionOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/cms/preview-token": {
+      "post": {
+        "tags": [
+          "cms"
+        ],
+        "summary": "Preview Token",
+        "description": "A 30-minute token that makes the website show drafts (Next.js draft mode).",
+        "operationId": "preview_token_v1_cms_preview_token_post",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreviewOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/cms/media": {
+      "get": {
+        "tags": [
+          "cms"
+        ],
+        "summary": "List Media",
+        "description": "The library, newest first (`kind` = image, video, application (PDF) or model (3D)).",
+        "operationId": "list_media_v1_cms_media_get",
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^(image|video|application|model)$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kind"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MediaOut"
+                  },
+                  "title": "Response List Media V1 Cms Media Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/cms/media/uploads": {
+      "post": {
+        "tags": [
+          "cms"
+        ],
+        "summary": "Start Upload",
+        "description": "Step 1: ask where to upload. PUT the file to `upload_url` with `headers`, then confirm. Accepted:\nWebP, JPEG, PNG, AVIF, SVG (15 MB), MP4, WebM (300 MB), PDF (30 MB), GLB 3D models (50 MB).",
+        "operationId": "start_upload_v1_cms_media_uploads_post",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/cms/media/{asset_id}/confirm": {
+      "post": {
+        "tags": [
+          "cms"
+        ],
+        "summary": "Confirm",
+        "description": "Step 2: the browser's PUT succeeded; the file joins the library.",
+        "operationId": "confirm_v1_cms_media__asset_id__confirm_post",
+        "parameters": [
+          {
+            "name": "asset_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Asset Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MediaOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/cms/media/{asset_id}": {
+      "patch": {
+        "tags": [
+          "cms"
+        ],
+        "summary": "Update Alt",
+        "description": "Alt text per language (accessibility and SEO).",
+        "operationId": "update_alt_v1_cms_media__asset_id__patch",
+        "parameters": [
+          {
+            "name": "asset_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Asset Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AltIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MediaOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AltIn": {
+        "properties": {
+          "alt": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Alt"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "alt"
+        ],
+        "title": "AltIn"
+      },
+      "CollectionInfo": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "single": {
+            "type": "boolean",
+            "title": "Single"
+          },
+          "json_schema": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Json Schema"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "title",
+          "single",
+          "json_schema"
+        ],
+        "title": "CollectionInfo"
+      },
+      "ConfirmIn": {
+        "properties": {
+          "width": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 20000.0,
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Width"
+          },
+          "height": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 20000.0,
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Height"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ConfirmIn"
+      },
+      "ContentDoc": {
+        "properties": {
+          "collection": {
+            "type": "string",
+            "title": "Collection"
+          },
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "published_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published At"
+          },
+          "data": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Data"
+          },
+          "draft": {
+            "type": "boolean",
+            "title": "Draft",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "collection",
+          "key",
+          "version",
+          "published_at",
+          "data"
+        ],
+        "title": "ContentDoc",
+        "description": "One published document in one language. `data` follows the collection's schema (CMS_API.md), with every\nmedia reference completed by `src`, `alt`, `width`, `height` and `content_type`."
+      },
+      "ContentList": {
+        "properties": {
+          "collection": {
+            "type": "string",
+            "title": "Collection"
+          },
+          "locale": {
+            "type": "string",
+            "enum": [
+              "en",
+              "ar"
+            ],
+            "title": "Locale"
+          },
+          "revision": {
+            "type": "integer",
+            "title": "Revision"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ContentDoc"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "collection",
+          "locale",
+          "revision",
+          "items"
+        ],
+        "title": "ContentList"
+      },
+      "DocumentOut": {
+        "properties": {
+          "collection": {
+            "type": "string",
+            "title": "Collection"
+          },
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "sort_order": {
+            "type": "integer",
+            "title": "Sort Order"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          },
+          "draft": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VersionOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "published": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VersionOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "collection",
+          "key",
+          "sort_order",
+          "updated_at",
+          "draft",
+          "published"
+        ],
+        "title": "DocumentOut"
+      },
+      "DocumentSummary": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "sort_order": {
+            "type": "integer",
+            "title": "Sort Order"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "published",
+              "changed"
+            ],
+            "title": "Status"
+          },
+          "published_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published Version"
+          },
+          "draft_revision": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Draft Revision"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "title",
+          "sort_order",
+          "updated_at",
+          "status",
+          "published_version",
+          "draft_revision"
+        ],
+        "title": "DocumentSummary"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "ManifestChapter": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "seconds": {
+            "type": "number",
+            "title": "Seconds",
+            "default": 0
+          },
+          "family": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Family"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title"
+        ],
+        "title": "ManifestChapter",
+        "description": "A factory-tour chapter (HM-05): the film opens at `seconds`."
+      },
+      "ManifestFamily": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "names": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Names",
+            "default": {}
+          },
+          "synonyms": {
+            "additionalProperties": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "type": "object",
+            "title": "Synonyms",
+            "default": {}
+          },
+          "path_en": {
+            "type": "string",
+            "title": "Path En",
+            "default": ""
+          },
+          "path_ar": {
+            "type": "string",
+            "title": "Path Ar",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "ManifestFamily"
+      },
+      "ManifestPage": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "names": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Names",
+            "default": {}
+          },
+          "path_en": {
+            "type": "string",
+            "title": "Path En"
+          },
+          "path_ar": {
+            "type": "string",
+            "title": "Path Ar"
+          },
+          "sections": {
+            "items": {
+              "$ref": "#/components/schemas/ManifestSection"
+            },
+            "type": "array",
+            "title": "Sections",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "title",
+          "path_en",
+          "path_ar"
+        ],
+        "title": "ManifestPage"
+      },
+      "ManifestProduct": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "ref": {
+            "type": "string",
+            "title": "Ref"
+          },
+          "catalogue_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Catalogue Code"
+          },
+          "family": {
+            "type": "string",
+            "title": "Family"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "packing": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Packing"
+          },
+          "range": {
+            "type": "string",
+            "enum": [
+              "trade",
+              "self"
+            ],
+            "title": "Range",
+            "default": "trade"
+          },
+          "path_en": {
+            "type": "string",
+            "title": "Path En",
+            "default": ""
+          },
+          "path_ar": {
+            "type": "string",
+            "title": "Path Ar",
+            "default": ""
+          },
+          "has_photo": {
+            "type": "boolean",
+            "title": "Has Photo",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "ref",
+          "family",
+          "name"
+        ],
+        "title": "ManifestProduct",
+        "description": "What the AI may say about a product and where it lives on the site. Never a price (\u00a77)."
+      },
+      "ManifestSection": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "design_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Design Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title",
+            "default": ""
+          },
+          "purpose": {
+            "type": "string",
+            "title": "Purpose",
+            "default": ""
+          },
+          "keywords": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Keywords",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "title": "ManifestSection",
+        "description": "One section of a page. `id` is the DOM id the website scrolls to (a contract with the site, D55)."
+      },
+      "MediaOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "src": {
+            "type": "string",
+            "title": "Src"
+          },
+          "filename": {
+            "type": "string",
+            "title": "Filename"
+          },
+          "content_type": {
+            "type": "string",
+            "title": "Content Type"
+          },
+          "size_bytes": {
+            "type": "integer",
+            "title": "Size Bytes"
+          },
+          "width": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Width"
+          },
+          "height": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Height"
+          },
+          "alt": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Alt"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "src",
+          "filename",
+          "content_type",
+          "size_bytes",
+          "width",
+          "height",
+          "alt",
+          "created_at"
+        ],
+        "title": "MediaOut"
+      },
+      "PreviewOut": {
+        "properties": {
+          "token": {
+            "type": "string",
+            "title": "Token"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Expires At"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "token",
+          "expires_at",
+          "url"
+        ],
+        "title": "PreviewOut"
+      },
+      "ProductDetail": {
+        "properties": {
+          "product": {
+            "$ref": "#/components/schemas/ContentDoc"
+          },
+          "family": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContentDoc"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "previous": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProductLink"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "next": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProductLink"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "more_from_family": {
+            "items": {
+              "$ref": "#/components/schemas/ContentDoc"
+            },
+            "type": "array",
+            "title": "More From Family"
+          }
+        },
+        "type": "object",
+        "required": [
+          "product",
+          "family",
+          "previous",
+          "next",
+          "more_from_family"
+        ],
+        "title": "ProductDetail",
+        "description": "PG-03: the product, its family, the products before and after it in the catalogue (PD-04) and up to\nfour more from the same family (PD-05)."
+      },
+      "ProductLink": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "ref": {
+            "type": "string",
+            "title": "Ref"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "ref",
+          "name"
+        ],
+        "title": "ProductLink"
+      },
+      "PublishIn": {
+        "properties": {
+          "note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "PublishIn"
+      },
+      "Redirect": {
+        "properties": {
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "destination": {
+            "type": "string",
+            "title": "Destination"
+          },
+          "permanent": {
+            "type": "boolean",
+            "title": "Permanent",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "source",
+          "destination"
+        ],
+        "title": "Redirect"
+      },
+      "SaveDraftIn": {
+        "properties": {
+          "data": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Data",
+            "description": "Content per language: {\"en\": {...}, \"ar\": {...}}"
+          },
+          "revision": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revision",
+            "description": "The draft revision you started from (null for a new draft)"
+          },
+          "sort_order": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 100000.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sort Order"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "title": "SaveDraftIn"
+      },
+      "SiteManifest": {
+        "properties": {
+          "revision": {
+            "type": "integer",
+            "title": "Revision"
+          },
+          "built_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Built At"
+          },
+          "pages": {
+            "items": {
+              "$ref": "#/components/schemas/ManifestPage"
+            },
+            "type": "array",
+            "title": "Pages",
+            "default": []
+          },
+          "families": {
+            "items": {
+              "$ref": "#/components/schemas/ManifestFamily"
+            },
+            "type": "array",
+            "title": "Families",
+            "default": []
+          },
+          "products": {
+            "items": {
+              "$ref": "#/components/schemas/ManifestProduct"
+            },
+            "type": "array",
+            "title": "Products",
+            "default": []
+          },
+          "chapters": {
+            "items": {
+              "$ref": "#/components/schemas/ManifestChapter"
+            },
+            "type": "array",
+            "title": "Chapters",
+            "default": []
+          },
+          "product_pages": {
+            "type": "boolean",
+            "title": "Product Pages",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "revision",
+          "built_at"
+        ],
+        "title": "SiteManifest",
+        "description": "D55: everything the assistant may show on the website. `revision` changes on every publish."
+      },
+      "SitemapEntry": {
+        "properties": {
+          "path_en": {
+            "type": "string",
+            "title": "Path En"
+          },
+          "path_ar": {
+            "type": "string",
+            "title": "Path Ar"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "page",
+              "product",
+              "family"
+            ],
+            "title": "Kind"
+          }
+        },
+        "type": "object",
+        "required": [
+          "path_en",
+          "path_ar",
+          "updated_at",
+          "kind"
+        ],
+        "title": "SitemapEntry"
+      },
+      "UploadIn": {
+        "properties": {
+          "filename": {
+            "type": "string",
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Filename"
+          },
+          "content_type": {
+            "type": "string",
+            "maxLength": 100,
+            "title": "Content Type"
+          },
+          "size": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Size"
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Sha256"
+          },
+          "alt": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Alt"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "filename",
+          "content_type",
+          "size",
+          "sha256"
+        ],
+        "title": "UploadIn"
+      },
+      "UploadOut": {
+        "properties": {
+          "asset_id": {
+            "type": "string",
+            "title": "Asset Id"
+          },
+          "object_key": {
+            "type": "string",
+            "title": "Object Key"
+          },
+          "upload_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Upload Url",
+            "description": "PUT the file here (null: this file is already in the library)"
+          },
+          "headers": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Headers"
+          },
+          "already_uploaded": {
+            "type": "boolean",
+            "title": "Already Uploaded"
+          }
+        },
+        "type": "object",
+        "required": [
+          "asset_id",
+          "object_key",
+          "upload_url",
+          "headers",
+          "already_uploaded"
+        ],
+        "title": "UploadOut"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "VersionOut": {
+        "properties": {
+          "number": {
+            "type": "integer",
+            "title": "Number"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "published",
+              "archived"
+            ],
+            "title": "Status"
+          },
+          "revision": {
+            "type": "integer",
+            "title": "Revision"
+          },
+          "data": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Data"
+          },
+          "author": {
+            "type": "string",
+            "title": "Author"
+          },
+          "saved_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Saved At"
+          },
+          "published_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published At"
+          },
+          "published_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published By"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "type": "object",
+        "required": [
+          "number",
+          "status",
+          "revision",
+          "data",
+          "author",
+          "saved_at",
+          "published_at",
+          "published_by",
+          "note"
+        ],
+        "title": "VersionOut"
+      },
+      "VersionSummary": {
+        "properties": {
+          "number": {
+            "type": "integer",
+            "title": "Number"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "published",
+              "archived"
+            ],
+            "title": "Status"
+          },
+          "author": {
+            "type": "string",
+            "title": "Author"
+          },
+          "saved_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Saved At"
+          },
+          "published_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published At"
+          },
+          "published_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published By"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "type": "object",
+        "required": [
+          "number",
+          "status",
+          "author",
+          "saved_at",
+          "published_at",
+          "published_by",
+          "note"
+        ],
+        "title": "VersionSummary"
+      }
+    }
+  }
+}

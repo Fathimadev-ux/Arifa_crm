@@ -8,7 +8,7 @@ import { useApi } from "./use-api";
 export type Contact = Schemas["ContactRow"];
 export type ContactEdit = Schemas["ContactEditIn"];
 export type Company = Schemas["CompanyRow"];
-export type CompanyInput = Schemas["CompanyIn"];
+export type CompanyInput = Schemas["kx__crm__api__records__CompanyIn"];
 export type ExportEntity = "deals" | "contacts" | "companies" | "orders" | "products";
 export type ExportFormat = "csv" | "xlsx";
 

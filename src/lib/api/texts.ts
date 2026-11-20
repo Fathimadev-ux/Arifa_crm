@@ -4,11 +4,13 @@
  * §5.2 message texts: what the AI says in fixed situations, the buyer messages that carry quotes and summaries,
  * and staff alerts. Staff write English; the AI translates buyer and AI texts into five languages.
  */
-import { api, unwrap } from "./client";
+import { api, unwrap, type Schemas } from "./client";
 import { runAction } from "./crm";
 import { revalidate, useApi } from "./use-api";
 
-export type { LanguageOut, TextChangeOut, TextOut } from "./schema-additions";
+export type TextOut = Schemas["TextOut"];
+export type LanguageOut = Schemas["LanguageOut"];
+export type TextChangeOut = Schemas["kx__crm__api__texts__ChangeOut"];
 
 const TEXTS = "texts";
 /** Translations arrive about a minute after a save, so the list reloads once then. */

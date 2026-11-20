@@ -2,8 +2,7 @@
 
 import { FileDown, FileUp } from "lucide-react";
 import { useRef, useState } from "react";
-import { applyWorkbook, downloadWorkbook, previewWorkbook } from "@/lib/api/catalogue";
-import type { FieldChangeOut, IssueOut, TierChangeOut, WorkbookApplied, WorkbookPreview } from "@/lib/api/schema-additions";
+import { type FieldChange as FieldChangeOut, type TierChange as TierChangeOut, type WorkbookApplied, type WorkbookIssue as IssueOut, type WorkbookPreview, applyWorkbook, downloadWorkbook, previewWorkbook } from "@/lib/api/catalogue";
 import { humanize } from "@/lib/format";
 import { showToast } from "@/components/Toaster";
 import { Button } from "@/components/ui";

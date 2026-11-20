@@ -11,14 +11,72 @@ export type ProductEdit = Schemas["ProductEditIn"];
 export type PriceTier = Schemas["PriceTierOut"];
 export type PriceTierInput = Schemas["PriceTierIn"];
 export type PriceTierPatch = Schemas["PriceTierPatch"];
-export type Change = Schemas["ChangeOut"];
+export type Change = Schemas["kx__crm__api__screens__ChangeOut"];
+export type WorkbookPreview = Schemas["PreviewOut"];
+export type WorkbookApplied = Schemas["AppliedOut"];
+export type WorkbookIssue = Schemas["IssueOut"];
+export type FieldChange = Schemas["FieldChangeOut"];
+export type TierChange = Schemas["TierChangeOut"];
 export type ImportResult = Schemas["ImportOut"];
 export type StockItem = Schemas["StockOut"];
 
 const productPath = (id: string) => ({ params: { path: { product_id: id } } });
 const tierPath = (id: string) => ({ params: { path: { tier_id: id } } });
 
+export type ErpImportResult = Schemas["ErpImportOut"];
+export type WebsiteVariant = Schemas["VariantOut"];
+export interface ProductFilters {
+  category?: string;
+  quotable?: boolean;
+}
+
 export const useProducts = () => useApi("products", async () => unwrap(await api.GET("/v1/products")));
+
+/** The catalogue filtered by the backend (category, quotable only); without filters it is useProducts. */
+export function useFilteredProducts(filters: ProductFilters) {
+  const query = { category: filters.category || undefined, quotable: filters.quotable || undefined };
+  const isFiltered = query.category !== undefined || query.quotable !== undefined;
+  return useApi(isFiltered ? `products:filtered:${JSON.stringify(query)}` : "products", async () => unwrap(await api.GET("/v1/products", { params: { query } })));
+}
+
+/** The sellable variants of a website product, as the AI describes them (no amounts). */
+export const useWebsiteVariants = (cmsProductId: string | null) =>
+  useApi(cmsProductId ? `products:variants:${cmsProductId}` : null, async () =>
+    unwrap(await api.GET("/v1/catalogue/website-products/{cms_product_id}/variants", { params: { path: { cms_product_id: cmsProductId! } } })),
+  );
+
+/** Link an ERP item to its website product, or unlink it (null). */
+export function setWebsiteLink(product: Product, cmsProductId: string | null) {
+  return runAction(
+    async () => {
+      unwrap(await api.PUT("/v1/catalogue/products/{sku}/website-link", { params: { path: { sku: product.sku } }, body: { cms_product_id: cmsProductId } }));
+      return true;
+    },
+    cmsProductId ? `${product.name} linked to its website product` : `${product.name} unlinked from the website`,
+    ["products"],
+  );
+}
+
+/**
+ * D61: the ERP stock list (CSV or .xlsx: Category, Item Description, Brand, Unit, OpnStk, In, Out, ClosStk). With
+ * `dryRun` nothing is saved: the answer shows what would change. Prices are never touched.
+ */
+export function importErp(file: File, dryRun: boolean) {
+  const isCsv = file.name.toLowerCase().endsWith(".csv");
+  return runAction(
+    async () =>
+      unwrap(
+        await api.POST("/v1/catalogue/erp-import", {
+          params: { query: { dry_run: dryRun } },
+          body: file as never,
+          bodySerializer: (body: unknown) => body as BodyInit,
+          headers: { "Content-Type": isCsv ? "text/csv" : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" },
+        }),
+      ),
+    dryRun ? "ERP list checked: nothing saved yet" : "ERP list saved",
+    dryRun ? [] : ["products", "stock"],
+  );
+}
 export const usePriceTiers = (productId: string | null) =>
   useApi(productId ? `products:${productId}:tiers` : null, async () => unwrap(await api.GET("/v1/products/{product_id}/price-tiers", productPath(productId!))));
 export const useProductHistory = (productId: string | null) =>

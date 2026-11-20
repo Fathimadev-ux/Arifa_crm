@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start -p 3100",
     "lint": "eslint",
-    "api:types": "openapi-typescript docs/openapi-crm.json -o src/lib/api/schema.d.ts"
+    "api:types": "openapi-typescript docs/handoff/openapi/openapi-crm.json -o src/lib/api/schema.d.ts"
   },
   "dependencies": {
     "lucide-react": "^1.69.0",

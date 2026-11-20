@@ -3,7 +3,7 @@
 import { Plus } from "lucide-react";
 import { useState } from "react";
 import { type Company, type Contact, useCompanies, useContacts } from "@/lib/api/records";
-import { channelLabel, formatDate } from "@/lib/format";
+import { channelLabel, formatDate, humanize } from "@/lib/format";
 import { useDebounced } from "@/hooks/useDebounced";
 import { type Column, DataTable, SearchBox } from "@/components/DataTable";
 import { ExportButtons } from "@/components/ExportButtons";
@@ -37,7 +37,8 @@ export function ContactsScreen() {
 
   const contactColumns: Column<Contact>[] = [
     { label: "Name", cell: (contact) => contact.full_name ?? "—", sub: (contact) => contact.designation, width: "24%" },
-    { label: "Phone", cell: (contact) => contact.phone_e164 ?? contact.whatsapp_e164 ?? "—", sub: (contact) => contact.email, width: "26%" },
+    // phone_status: whether the number works (checked by the backend).
+    { label: "Phone", cell: (contact) => contact.phone_e164 ?? contact.whatsapp_e164 ?? "—", sub: (contact) => [contact.phone_status && humanize(contact.phone_status), contact.email].filter(Boolean).join(" · "), width: "26%" },
     { label: "Company", cell: (contact) => companyName(contact.company_id) ?? "—", width: "20%" },
     { label: "Prefers", cell: (contact) => (contact.preferred_channel ? channelLabel(contact.preferred_channel) : "—"), sub: (contact) => contact.language, width: "15%" },
     { label: "Added", cell: (contact) => formatDate(contact.created_at), sub: (contact) => contact.source, width: "15%" },

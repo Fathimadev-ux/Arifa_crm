@@ -1,11 +1,15 @@
-/** The four roles the backend puts in the token (SRS §3). The backend enforces every rule; this only hides buttons. */
-export type Role = "sales" | "manager" | "md" | "admin";
+/**
+ * The roles the backend puts in the token (SRS §3). The backend enforces every rule; this only hides buttons.
+ * content_editor (18 Nov) works in the CMS only: the CRM shows them no deal screens.
+ */
+export type Role = "sales" | "manager" | "md" | "admin" | "content_editor";
 
 export const ROLE_LABEL: Record<Role, string> = {
   sales: "Sales",
   manager: "Manager",
   md: "MD",
   admin: "Admin",
+  content_editor: "Content editor",
 };
 
 export type Permission =

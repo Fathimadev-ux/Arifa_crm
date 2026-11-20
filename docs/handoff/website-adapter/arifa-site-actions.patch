@@ -1,0 +1,116 @@
+diff --git a/src/assistant/assistant.ts b/src/assistant/assistant.ts
+index 0490cd2..28aaeeb 100644
+--- a/src/assistant/assistant.ts
++++ b/src/assistant/assistant.ts
+@@ -647,6 +647,7 @@ export function initAssistant({ page, lenis, hero = null }: { page: PageName; le
+     else if (action?.type === 'product' && action.ref) await showProduct(String(action.ref));
+     else if (action?.type === 'quote') await goQuote(action.fill || {});
+     else if (action?.type === 'factory') await goFactory();
++    else if (action?.type === 'navigate' && action.href) window.location.href = action.href;
+     else if (action?.type === 'whatsapp') {
+       // the backend is unavailable: WhatsApp click-to-chat is the way through
+       const li = document.createElement('li');
+diff --git a/src/assistant/brain.ts b/src/assistant/brain.ts
+index d71600e..265892a 100644
+--- a/src/assistant/brain.ts
++++ b/src/assistant/brain.ts
+@@ -12,7 +12,27 @@
+ */
+ import type { FamilyInfo, Turn } from './types';
+ import { isArPage, tc } from '@/i18n/client';
+-import { apiEnabled, sendMessage, ApiError } from '@/lib/arifaApi';
++import { apiEnabled, sendMessage, ApiError, type SiteAction } from '@/lib/arifaApi';
++import catalogue from '@/data/catalogue.json';
++
++// the backend's site actions in this page's own vocabulary (act() in assistant.ts). The last one wins: the
++// instant layer shows the family, then the agent may open the exact product.
++const refOf = (id: string) => ((catalogue as any).products || []).find((p) => p.id === id)?.ref || id;
++function toAction(actions: SiteAction[] | undefined) {
++  let out = null;
++  for (const a of actions || []) {
++    if (a.type === 'show_family' && a.family) out = { type: 'family', id: a.family };
++    else if (a.type === 'show_product' && a.product_id) out = { type: 'product', ref: refOf(a.product_id) };
++    else if (a.type === 'factory_tour') out = { type: 'factory' };
++    else if (a.type === 'fill_enquiry' && a.fill) {
++      const f = a.fill;
++      out = { type: 'quote', fill: { family: (f.family || [])[0] || '', quantity: f.quantity || '', city: f.city || '', notes: f.message || f.detail || '' } };
++    } else if ((a.type === 'navigate' || a.type === 'scroll_to') && a.resolved) {
++      out = { type: 'navigate', href: isArPage() ? a.resolved.path_ar : a.resolved.path_en };
++    }
++  }
++  return out;
++}
+ import { phone } from '@/data/site';
+ 
+ // WhatsApp click-to-chat: the last resort when the assistant is unavailable (API 503)
+@@ -168,7 +188,7 @@ export function createBrain({ families }: { families: FamilyInfo[] }) {
+     try {
+       const r = await sendMessage(text, { language: isArPage() ? 'ar' : 'en', voiceConsent });
+       if (r.handed_over) return { say: r.reply ? `${r.reply}\n\n${handedOver}` : handedOver, action: null };
+-      return { say: r.reply || tc('One moment, a member of our team is with you.'), action: null };
++      return { say: r.reply || tc('One moment, a member of our team is with you.'), action: toAction(r.actions) };
+     } catch (e) {
+       const status = e instanceof ApiError ? e.status : 0;
+       if (status === 429) return { say: tc('Please slow down a moment, then try again.'), action: null };
+diff --git a/src/assistant/types.ts b/src/assistant/types.ts
+index 7fd5a41..42ad797 100644
+--- a/src/assistant/types.ts
++++ b/src/assistant/types.ts
+@@ -10,7 +10,7 @@ export type QuoteFill = { family?: string; quantity?: string; city?: string; not
+ /** something the assistant does on the page after it speaks */
+ export type AssistantAction =
+   { type: 'family'; id: string } | { type: 'product'; ref: string } | { type: 'quote'; fill: QuoteFill } | { type: 'factory' }
+-  | { type: 'whatsapp'; href: string };
++  | { type: 'whatsapp'; href: string } | { type: 'navigate'; href: string };
+ 
+ /** one turn of the assistant: a line to say, and maybe one action */
+ export type AssistantReply = { say: string; action: AssistantAction | null };
+diff --git a/src/lib/arifaApi.ts b/src/lib/arifaApi.ts
+index f33986d..fd2d48e 100644
+--- a/src/lib/arifaApi.ts
++++ b/src/lib/arifaApi.ts
+@@ -33,7 +33,34 @@ export type Session = {
+   voice_available: boolean;
+   voice_consent: boolean; // (ours: whether it was started with voice consent)
+ };
+-export type MessageOut = { reply: string | null; language: string; handed_over: boolean };
++/** what the assistant asks the page to do (WEBSITE_API.md: checked against the site map, never a selector or a price) */
++export type SiteAction = {
++  id: string; type: string; layer: 'instant' | 'agent';
++  resolved?: { path_en: string; path_ar: string; anchor?: string | null } | null;
++  family?: string; product_id?: string; page?: string; section?: string | null; chapter?: string | null;
++  product_ids?: string[]; fill?: Record<string, any>;
++};
++export type MessageOut = { reply: string | null; language: string; handed_over: boolean; actions?: SiteAction[] };
++
++/** where the visitor is (SiteContext): sent with every message so the assistant knows the page */
++export function siteContext() {
++  const ar = location.pathname === '/ar' || location.pathname.startsWith('/ar/');
++  const p = ar ? location.pathname.slice(3) || '/' : location.pathname;
++  const seg = p.split('/').filter(Boolean);
++  const pages = ['products', 'about', 'quality', 'clients', 'contact'];
++  const page = seg.length === 0 ? 'home' : seg[0] === 'products' && seg[1] ? 'product' : pages.includes(seg[0]) ? seg[0] : 'other';
++  const q = new URLSearchParams(location.search);
++  const id = (v: string | null) => (v && /^[a-z0-9][a-z0-9_-]{0,127}$/.test(v) ? v : null);
++  return {
++    path: (location.pathname + location.search).slice(0, 300),
++    page,
++    locale: ar ? 'ar' : 'en',
++    family: id(q.get('family')),
++    product_id: page === 'product' ? id(seg[1]) : null,
++    quick_view_id: id(q.get('p')),
++    input: 'text',
++  };
++}
+ export type VoiceOut = { livekit_url: string; token: string; room: string; language: string; expires_at: string };
+ 
+ /** a refused call: the HTTP status and, for business errors, the problem+json `reason` */
+@@ -156,7 +183,7 @@ async function withSession<T>(fn: (s: Session) => Promise<T>, opts: { voiceConse
+ /** one chat turn (§6 steps 2–6). `reply` may be null: a person has the conversation now. */
+ export function sendMessage(text: string, { language, voiceConsent = false }: { language?: string; voiceConsent?: boolean } = {}) {
+   return withSession(
+-    (s) => call<MessageOut>(`/v1/public/sessions/${s.session_id}/messages`, { text: text.slice(0, 2000), language: language ?? null }, s.session_token),
++    (s) => call<MessageOut>(`/v1/public/sessions/${s.session_id}/messages`, { text: text.slice(0, 2000), language: language ?? null, context: siteContext() }, s.session_token),
+     { voiceConsent, language },
+   );
+ }

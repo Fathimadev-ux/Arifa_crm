@@ -4,6 +4,7 @@
 import { stageLabel, type LostReason } from "@/config/stages";
 import { showToast } from "@/components/Toaster";
 import { ApiError, api, unwrap, type DealStage, type Schemas } from "./client";
+import type { paths } from "./schema";
 import { revalidate, useApi } from "./use-api";
 
 export type Deal = Schemas["DealSummary"];
@@ -24,11 +25,14 @@ const DEALS = "deals";
 const INBOX = "inbox";
 const dealKey = (id: string) => `deal:${id}`;
 
-async function loadAllDeals(): Promise<Deal[]> {
+/** The deals board's server filters (§20.3, §7A.3): stage, owner, country, product, SKU, value range, opted out, unassigned, escalated. */
+export type DealFilters = Omit<NonNullable<paths["/v1/deals"]["get"]["parameters"]["query"]>, "cursor" | "limit" | "authorization">;
+
+async function loadAllDeals(filters: DealFilters = {}): Promise<Deal[]> {
   const deals: Deal[] = [];
   let cursor: string | undefined;
   for (let page = 0; page < MAX_DEAL_PAGES; page++) {
-    const result = unwrap(await api.GET("/v1/deals", { params: { query: { limit: PAGE_SIZE, cursor } } }));
+    const result = unwrap(await api.GET("/v1/deals", { params: { query: { ...filters, limit: PAGE_SIZE, cursor } } }));
     deals.push(...result.items);
     if (!result.next_cursor) break;
     cursor = result.next_cursor;
@@ -38,7 +42,14 @@ async function loadAllDeals(): Promise<Deal[]> {
 
 export const dealPath = (id: string) => ({ params: { path: { deal_id: id } } });
 
-export const useDeals = () => useApi(DEALS, loadAllDeals);
+export const useDeals = () => useApi(DEALS, () => loadAllDeals());
+
+/** The board with server filters; without any it is the same list as useDeals. */
+export function useFilteredDeals(filters: DealFilters) {
+  const active = Object.fromEntries(Object.entries(filters).filter(([, value]) => value !== undefined && value !== null && value !== "")) as DealFilters;
+  const key = Object.keys(active).length ? `${DEALS}:filtered:${JSON.stringify(active)}` : DEALS;
+  return useApi(key, () => loadAllDeals(active));
+}
 
 export const useDeal = (id: string) => useApi(dealKey(id), async () => unwrap(await api.GET("/v1/deals/{deal_id}", dealPath(id))), POLL_MS);
 
@@ -87,6 +98,8 @@ export interface MoveDetails {
   /** §15.1: every payment detail is optional. */
   payment?: Schemas["PaymentIn"];
   won?: Schemas["WonIn"];
+  /** Optional note on a stage move (StageMoveIn.reason). */
+  reason?: string;
 }
 
 /** PAYMENT and WON have their own steps in the API (§15); every other move goes through /stage. */
@@ -96,7 +109,7 @@ export function moveDeal(deal: Deal, to: DealStage, details?: MoveDetails) {
       if (to === "PAYMENT") return unwrap(await api.POST("/v1/deals/{deal_id}/payments", { ...dealPath(deal.id), body: details?.payment ?? {} }));
       if (to === "WON") return unwrap(await api.POST("/v1/deals/{deal_id}/won", { ...dealPath(deal.id), body: details?.won ?? {} }));
       const lost = details?.lost;
-      const body = { to, expected_version: deal.version, lost_reason: lost?.reason, lost_note: lost?.note || null };
+      const body = { to, expected_version: deal.version, reason: details?.reason?.trim() || null, lost_reason: lost?.reason, lost_note: lost?.note || null };
       return unwrap(await api.POST("/v1/deals/{deal_id}/stage", { ...dealPath(deal.id), body }));
     },
     `${deal.number} moved to ${stageLabel(to)}`,
@@ -108,9 +121,12 @@ export function reopenDeal(deal: Deal, reason: string) {
   return runAction(async () => unwrap(await api.POST("/v1/deals/{deal_id}/reopen", { ...dealPath(deal.id), body: { reason } })), `${deal.number} reopened`, afterDealChange(deal.id));
 }
 
-export function setAiEnabled(deal: Deal, enabled: boolean) {
+export type AiPauseReason = Schemas["AiToggleIn"]["reason"];
+
+/** Pause the AI (with why: a person takes over, or an exception) or hand the chat back. */
+export function setAiEnabled(deal: Deal, enabled: boolean, reason: AiPauseReason = "human_takeover") {
   return runAction(
-    async () => unwrap(await api.POST("/v1/deals/{deal_id}/ai", { ...dealPath(deal.id), body: { enabled, reason: "human_takeover" } })),
+    async () => unwrap(await api.POST("/v1/deals/{deal_id}/ai", { ...dealPath(deal.id), body: { enabled, reason } })),
     enabled ? "AI handed back the conversation" : "You took over from the AI",
     afterDealChange(deal.id),
   );
@@ -129,6 +145,10 @@ const DECISION_MESSAGE: Record<QuoteDecision, string> = {
   correct: "Correction requested",
   reject: "Quote rejected",
 };
+
+/** Decided approvals (manager / MD), newest first: who decided, when, and the note. */
+export const useDecidedApprovals = (canList: boolean) =>
+  useApi(canList ? "approvals:decided" : null, async () => unwrap(await api.GET("/v1/approvals", { params: { query: { status: "decided", limit: PAGE_SIZE } } })).items);
 
 export function decideApproval(approvalId: string, dealId: string, decision: QuoteDecision, note: string) {
   return runAction(

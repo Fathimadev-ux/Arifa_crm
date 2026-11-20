@@ -21,10 +21,12 @@ export function DealOrder({ deal }: { deal: DealDetail }) {
   const { role } = useSession();
   const { data: order } = useDealOrder(deal.id, deal.stage === "WON");
   const [trackingRef, setTrackingRef] = useState("");
+  const [onDate, setOnDate] = useState("");
 
   if (!order) return null;
   const nextStatus = NEXT_STATUS[order.status];
   const canUpdate = can(role, "UPDATE_ORDERS") && nextStatus;
+  const reset = () => (setTrackingRef(""), setOnDate(""));
 
   return (
     <Section title={`Order ${order.number}`} index={5}>
@@ -43,13 +45,17 @@ export function DealOrder({ deal }: { deal: DealDetail }) {
           className="mt-5 flex flex-wrap items-center gap-2 border-t border-dashed border-neutral-200 pt-4"
           onSubmit={(event) => {
             event.preventDefault();
-            void updateOrderStatus(order, nextStatus, trackingRef.trim()).then(() => setTrackingRef(""));
+            void updateOrderStatus(order, nextStatus, trackingRef.trim(), onDate).then(reset);
           }}
         >
           {nextStatus === "shipped" && (
             <input value={trackingRef} onChange={(event) => setTrackingRef(event.target.value)} placeholder="Tracking number (optional)" aria-label="Tracking number" className={`${INPUT} w-56`} />
           )}
+          <input type="date" value={onDate} onChange={(event) => setOnDate(event.target.value)} aria-label="On date (empty = today)" title="Leave empty for today" className={`${INPUT} w-44`} />
           <Button type="submit">Mark {humanize(nextStatus).toLowerCase()}</Button>
+          <Button type="button" variant="secondary" onClick={() => void updateOrderStatus(order, "cancelled", undefined, onDate).then(reset)}>
+            Cancel order
+          </Button>
         </form>
       )}
     </Section>

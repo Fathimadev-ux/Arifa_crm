@@ -4,6 +4,7 @@ import { Plus } from "lucide-react";
 import { useState } from "react";
 import { type ChannelAccount, type Template, type TemplateInput, type TemplateStatus, currentTemplates, editChannelAccount, saveTemplate, setTemplateStatus, useChannelAccounts, useTemplates } from "@/lib/api/admin";
 import { channelLabel, formatDateTime, humanize } from "@/lib/format";
+import { useStaffNames } from "@/hooks/useStaffNames";
 import { type Column, DataTable } from "@/components/DataTable";
 import { FormCard, Select, TextArea, TextInput } from "@/components/forms";
 import { Button, LoadingState } from "@/components/ui";
@@ -14,6 +15,7 @@ const CATEGORIES = ["utility", "marketing", "authentication", "internal"] as con
 /** Which countries a WhatsApp number serves, whether it is the default, and on / off (regional routing). */
 function AccountEditor({ account, onClose }: { account: ChannelAccount; onClose: () => void }) {
   const [displayName, setDisplayName] = useState(account.display_name);
+  const [region, setRegion] = useState(account.region ?? "");
   const [countries, setCountries] = useState(account.countries.join(", "));
   const [isDefault, setIsDefault] = useState(account.is_default);
   const [isActive, setIsActive] = useState(account.status === "active");
@@ -26,10 +28,11 @@ function AccountEditor({ account, onClose }: { account: ChannelAccount; onClose:
       submitLabel="Save"
       canSubmit={codesValid && displayName.trim() !== ""}
       onCancel={onClose}
-      onSubmit={() => void editChannelAccount(account.id, { display_name: displayName.trim(), countries: codes, is_default: isDefault, status: isActive ? "active" : "disabled" }).then((result) => result && onClose())}
+      onSubmit={() => void editChannelAccount(account.id, { display_name: displayName.trim(), region: region.trim() || null, countries: codes, is_default: isDefault, status: isActive ? "active" : "disabled" }).then((result) => result && onClose())}
     >
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <TextInput label="Name" value={displayName} onChange={(event) => setDisplayName(event.target.value)} maxLength={200} />
+        <TextInput label="Region" placeholder="Gulf" value={region} onChange={(event) => setRegion(event.target.value)} maxLength={64} />
         <TextInput label="Countries (2-letter codes)" placeholder="AE, SA, OM" value={countries} onChange={(event) => setCountries(event.target.value)} />
       </div>
       <div className="flex gap-5">
@@ -46,6 +49,7 @@ function AccountEditor({ account, onClose }: { account: ChannelAccount; onClose:
 
 /** Every version of one template, newest first; "live" is the one being sent. */
 function TemplateVersions({ versions }: { versions: Template[] }) {
+  const { nameOf } = useStaffNames();
   return (
     <div className="space-y-1 border-t border-dashed border-neutral-200 pt-3">
       <p className="text-xs font-semibold text-neutral-500">Versions</p>
@@ -54,6 +58,7 @@ function TemplateVersions({ versions }: { versions: Template[] }) {
           v{version.version} · {humanize(version.provider_status)}
           {version.live && <span className="ml-1.5 rounded-full bg-black px-2 py-0.5 font-medium text-white">Live</span>}
           {version.provider_name && <span className="font-mono text-neutral-400"> · {version.provider_name}</span>} · {formatDateTime(version.created_at)}
+          {version.created_by && ` · ${nameOf(version.created_by)}`}
         </p>
       ))}
     </div>
@@ -109,8 +114,8 @@ export function ChannelsSettings({ canEditNumbers, canEditTemplates }: { canEdit
 
   const accountColumns: Column<ChannelAccount>[] = [
     { label: "Number / address", cell: (account) => account.address, sub: (account) => account.display_name, width: "30%" },
-    { label: "Channel", cell: (account) => channelLabel(account.channel), sub: (account) => humanize(account.purpose), width: "18%" },
-    { label: "Countries", cell: (account) => account.countries.join(", ") || "—", sub: (account) => (account.is_default ? "Default" : undefined), width: "26%" },
+    { label: "Channel", cell: (account) => channelLabel(account.channel), sub: (account) => `${humanize(account.purpose)} · ${humanize(account.provider)}`, width: "18%" },
+    { label: "Countries", cell: (account) => account.countries.join(", ") || "—", sub: (account) => [account.region, account.is_default && "Default"].filter(Boolean).join(" · ") || undefined, width: "26%" },
     { label: "Status", cell: (account) => humanize(account.status), width: "26%" },
   ];
   const groups = currentTemplates(templates);

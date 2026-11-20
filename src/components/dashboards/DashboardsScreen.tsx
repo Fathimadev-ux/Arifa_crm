@@ -1,6 +1,6 @@
 "use client";
 
-import { AlarmClock, BadgeCheck, BotOff, Clock, FileClock, Inbox, Percent, Send, ShieldAlert, Tag, Trophy, Wallet } from "lucide-react";
+import { AlarmClock, BadgeCheck, BotOff, Clock, FileClock, Inbox, ListTodo, Percent, Send, ShieldAlert, Tag, Trophy, Wallet } from "lucide-react";
 import { useState } from "react";
 import { can } from "@/config/roles";
 import { STAGES } from "@/config/stages";
@@ -56,11 +56,12 @@ function ManagerSection({ board }: { board: ManagerBoard }) {
     <>
       <h2 className="pt-4 text-2xl font-light tracking-tight">Team</h2>
       {summary && (
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
           <StatCard index={1} icon={Wallet} label="Open pipeline" value={aed(Number(summary.open_pipeline_aed))} />
           <StatCard index={2} icon={FileClock} label="Approvals waiting" value={summary.approvals_pending} />
           <StatCard index={3} icon={AlarmClock} label="Approvals overdue" value={summary.approvals_overdue} />
           <StatCard index={4} icon={BotOff} label="AI paused" value={summary.ai_paused_deals} />
+          <StatCard index={5} icon={ListTodo} label="Open tasks" value={summary.open_tasks} />
         </div>
       )}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -70,7 +71,8 @@ function ManagerSection({ board }: { board: ManagerBoard }) {
         <StatCard index={8} icon={BotOff} label="Opted out" value={board.opted_out} />
       </div>
       <DataTable rows={board.salespeople} columns={SALES_COLUMNS} rowKey={(row) => row.user_id} minWidth={640} emptyText="No salespeople" />
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        {summary && <BarList title="Deals by stage (team)" entries={byStage(summary.deals_by_stage)} />}
         <BarList title="Change requests" entries={sortedEntries(board.change_requests_by_type)} />
         <BarList title="Why buyers opted out" entries={sortedEntries(board.opt_out_reasons)} />
         {summary && <BarList title="Material rates (days old)" entries={summary.materials.map((material) => [`${material.material_code}${material.level === "ok" ? "" : ` · ${material.level}`}`, material.days_since_approval ?? 0])} format={(days) => `${days} d`} />}

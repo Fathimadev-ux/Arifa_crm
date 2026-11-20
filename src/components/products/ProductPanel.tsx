@@ -3,7 +3,7 @@
 import { X } from "lucide-react";
 import { useState } from "react";
 import { can } from "@/config/roles";
-import { type Product, type ProductEdit, editProduct, useProductHistory } from "@/lib/api/catalogue";
+import { type Product, type ProductEdit, editProduct, setWebsiteLink, useProductHistory, useWebsiteVariants } from "@/lib/api/catalogue";
 import { formatDateTime, humanize } from "@/lib/format";
 import { useStaffNames } from "@/hooks/useStaffNames";
 import { useSession } from "@/store/session";
@@ -87,7 +87,73 @@ function CrmFields({ product, canEdit }: { product: Product; canEdit: boolean })
   );
 }
 
-/** One product: CRM fields, price tiers, the specification from the CMS, and its change history. */
+/**
+ * D61: which website product this ERP item (a variant) belongs to: link or unlink it when the automatic match was
+ * unsure or wrong; and the website product's sellable variants as the AI describes them (no amounts).
+ */
+function WebsiteLink({ product, canLink }: { product: Product; canLink: boolean }) {
+  const [cmsProductId, setCmsProductId] = useState(product.cms_product_id ?? "");
+  const { data: variants } = useWebsiteVariants(product.cms_product_id);
+  const isChanged = cmsProductId.trim() !== (product.cms_product_id ?? "");
+
+  return (
+    <div className="space-y-3">
+      <DetailList
+        items={[
+          ["Website product", product.cms_product_id ?? "Not linked"],
+          ["On the website", product.cms_published ? "Published" : "Hidden"],
+        ]}
+      />
+      {canLink && (
+        <div className="flex flex-wrap items-end gap-2">
+          <TextInput label="Website product id" className="min-w-0 flex-1" value={cmsProductId} onChange={(event) => setCmsProductId(event.target.value)} placeholder="From the CMS" />
+          <Button variant="secondary" disabled={!isChanged || !cmsProductId.trim()} onClick={() => void setWebsiteLink(product, cmsProductId.trim())}>
+            Link
+          </Button>
+          {product.cms_product_id && (
+            <Button variant="secondary" onClick={() => void setWebsiteLink(product, null).then((done) => done && setCmsProductId(""))}>
+              Unlink
+            </Button>
+          )}
+        </div>
+      )}
+      {variants && variants.length > 0 && (
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[520px] text-left text-sm">
+            <thead className="text-xs text-neutral-500">
+              <tr>
+                {["Variant", "Packing", "Availability", "MOQ", "Better price from", "Quotable"].map((label) => (
+                  <th key={label} className="px-2 py-2 font-medium">
+                    {label}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-dashed divide-neutral-200">
+              {variants.map((variant) => (
+                <tr key={variant.sku}>
+                  <td className="px-2 py-2">
+                    {variant.description}
+                    <span className="block text-xs text-neutral-400">
+                      {variant.sku} · {variant.unit}
+                    </span>
+                  </td>
+                  <td className="px-2 py-2">{variant.packing ?? "—"}</td>
+                  <td className="px-2 py-2">{humanize(variant.availability)}</td>
+                  <td className="px-2 py-2 tabular-nums">{variant.moq?.toLocaleString() ?? "—"}</td>
+                  <td className="px-2 py-2">{variant.quantity_breaks.join(", ") || "—"}</td>
+                  <td className="px-2 py-2">{variant.quotable ? "Yes" : "No"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** One product: CRM fields, price tiers, the website link and variants, the specification from the CMS, and its history. */
 export function ProductPanel({ product, onClose }: { product: Product; onClose: () => void }) {
   const { role } = useSession();
   const { nameOf } = useStaffNames();
@@ -101,6 +167,7 @@ export function ProductPanel({ product, onClose }: { product: Product; onClose: 
           <h2 className="text-2xl font-light tracking-tight">{product.name}</h2>
           <p className="mt-1 text-sm text-neutral-500">
             {product.sku} · {humanize(product.category_code)}
+            {product.custom_printing && " · custom printing available"}
             {product.cms_synced_at && ` · from the CMS ${formatDateTime(product.cms_synced_at)}`}
           </p>
         </div>
@@ -117,6 +184,11 @@ export function ProductPanel({ product, onClose }: { product: Product; onClose: 
       <div>
         <h3 className="mb-3 text-sm font-semibold">Price tiers</h3>
         <PriceTiers product={product} canEdit={can(role, "EDIT_PRICES")} />
+      </div>
+
+      <div>
+        <h3 className="mb-3 text-sm font-semibold">Website</h3>
+        <WebsiteLink key={`${product.id}-${product.cms_product_id}`} product={product} canLink={can(role, "USE_WORKBOOK")} />
       </div>
 
       {specEntries.length > 0 && (

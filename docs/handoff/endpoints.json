@@ -1,0 +1,2420 @@
+{
+  "folders": [
+    {
+      "name": "00 Health and keys",
+      "description": "Is the server up? Run these first on every target."
+    },
+    {
+      "name": "01 Staff sign-in and MFA",
+      "description": "Sign in with email + password, then a second step. First sign-in: email code, change the one-time password, enrol YOUR OWN authenticator app, then sign in again with the app."
+    },
+    {
+      "name": "02 Users and admin settings",
+      "description": "Staff accounts, availability, settings, kill switch, company details, message texts."
+    },
+    {
+      "name": "03 Contacts, companies and deals",
+      "description": "The CRM records a buyer conversation creates. Run 'List deals' after each buyer test."
+    },
+    {
+      "name": "04 Products, stock and price list",
+      "description": "Catalogue, price tiers (list price + minimum per quantity), stock, FX rates."
+    },
+    {
+      "name": "05 Quotes, approvals and change requests",
+      "description": "The backend builds every quote; staff approve it before it is sent."
+    },
+    {
+      "name": "06 Payment, won and orders",
+      "description": "After the final quote: payment, WON, order tracking."
+    },
+    {
+      "name": "07 Dashboards and exports",
+      "description": "Dashboards per role and CSV / XLSX exports."
+    },
+    {
+      "name": "08 Channels admin",
+      "description": "Company WhatsApp numbers / mailboxes and message templates."
+    },
+    {
+      "name": "09 Buyer simulation - WhatsApp",
+      "description": "Pretend to be a buyer on WhatsApp. The request is signed automatically from wa_app_secret."
+    },
+    {
+      "name": "10 Buyer simulation - Website chat",
+      "description": "Pretend to be a website visitor (public API, no staff login)."
+    },
+    {
+      "name": "11 CMS publish webhook",
+      "description": "Pretend to be the website CMS publishing a product. Signed automatically."
+    },
+    {
+      "name": "12 Unsubscribe link",
+      "description": "The one-click unsubscribe link printed in every buyer email."
+    },
+    {
+      "name": "13 Telnyx call webhooks",
+      "description": "Call-status callbacks from the phone provider. Signed automatically (URL token)."
+    },
+    {
+      "name": "14 Negative and security tests",
+      "description": "Requests that MUST be refused. A pass here means the server said no."
+    },
+    {
+      "name": "15 CMS: website content and editors",
+      "description": "D54: the website's content reads (public, cached) and the editors' draft / publish / versions / media API (content editor, admin, manager). Sign in first (folder 01)."
+    }
+  ],
+  "routes": [
+    {
+      "folder": "01 Staff sign-in and MFA",
+      "name": "1. Login (email + password)",
+      "method": "POST",
+      "path": "/v1/auth/login",
+      "who": "public (no sign-in)",
+      "roles": [],
+      "mfa_required": false,
+      "auth": "none",
+      "purpose": "Step 1: email + password.",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "01 Staff sign-in and MFA",
+      "name": "7. Second step with the authenticator code (mfa=true)",
+      "method": "POST",
+      "path": "/v1/auth/mfa/totp",
+      "who": "public (no sign-in)",
+      "roles": [],
+      "mfa_required": false,
+      "auth": "none",
+      "purpose": "Step 2 with the authenticator app: `mfa=true` (needed for approvals, price edits, settings).",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "01 Staff sign-in and MFA",
+      "name": "2. Send the email sign-in code",
+      "method": "POST",
+      "path": "/v1/auth/mfa/email/send",
+      "who": "public (no sign-in)",
+      "roles": [],
+      "mfa_required": false,
+      "auth": "none",
+      "purpose": "Fallback second step: a 6-digit code to the staff member's work address (valid 10 minutes).",
+      "expected_status": 204,
+      "package": "CRM"
+    },
+    {
+      "folder": "01 Staff sign-in and MFA",
+      "name": "3. Verify the email code (first sign-in / fallback)",
+      "method": "POST",
+      "path": "/v1/auth/mfa/email/verify",
+      "who": "public (no sign-in)",
+      "roles": [],
+      "mfa_required": false,
+      "auth": "none",
+      "purpose": "Step 2 with the email code: signed in with `mfa=false` (no approvals until TOTP is used).",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "01 Staff sign-in and MFA",
+      "name": "9. Refresh the access token",
+      "method": "POST",
+      "path": "/v1/auth/refresh",
+      "who": "public (no sign-in)",
+      "roles": [],
+      "mfa_required": false,
+      "auth": "none",
+      "purpose": "A new access token.",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "01 Staff sign-in and MFA",
+      "name": "10. Logout",
+      "method": "POST",
+      "path": "/v1/auth/logout",
+      "who": "public (no sign-in)",
+      "roles": [],
+      "mfa_required": false,
+      "auth": "none",
+      "purpose": "End this session: the refresh token (cookie) and the session the access token names are revoked and the cookie cleared.",
+      "expected_status": 204,
+      "package": "CRM"
+    },
+    {
+      "folder": "01 Staff sign-in and MFA",
+      "name": "8. Who am I",
+      "method": "GET",
+      "path": "/v1/auth/me",
+      "who": "any signed-in staff",
+      "roles": [],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "The signed-in staff member (name, role, languages, alert channels) for the screen header.",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "01 Staff sign-in and MFA",
+      "name": "5. Enrol your authenticator app (shows a QR code)",
+      "method": "POST",
+      "path": "/v1/auth/totp/enrol",
+      "who": "any signed-in staff",
+      "roles": [],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "A new authenticator seed for the signed-in user (active only after /totp/confirm).",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "01 Staff sign-in and MFA",
+      "name": "6. Confirm the authenticator code",
+      "method": "POST",
+      "path": "/v1/auth/totp/confirm",
+      "who": "any signed-in staff",
+      "roles": [],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "The first code from the app switches TOTP on.",
+      "expected_status": 204,
+      "package": "CRM"
+    },
+    {
+      "folder": "01 Staff sign-in and MFA",
+      "name": "4. Change password (first sign-in: replace the one-time password)",
+      "method": "POST",
+      "path": "/v1/auth/password",
+      "who": "any signed-in staff",
+      "roles": [],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "Change the password (ends every other session).",
+      "expected_status": 204,
+      "package": "CRM"
+    },
+    {
+      "folder": "01 Staff sign-in and MFA",
+      "name": "11. Forgot password - send reset code",
+      "method": "POST",
+      "path": "/v1/auth/password/reset/start",
+      "who": "public (no sign-in)",
+      "roles": [],
+      "mfa_required": false,
+      "auth": "none",
+      "purpose": "Recovery: a code to the work address.",
+      "expected_status": 202,
+      "package": "CRM"
+    },
+    {
+      "folder": "01 Staff sign-in and MFA",
+      "name": "12. Forgot password - set new password",
+      "method": "POST",
+      "path": "/v1/auth/password/reset/finish",
+      "who": "public (no sign-in)",
+      "roles": [],
+      "mfa_required": false,
+      "auth": "none",
+      "purpose": "Recovery step 2: the emailed code + a new password (min 12 characters); every session ends.",
+      "expected_status": 204,
+      "package": "CRM"
+    },
+    {
+      "folder": "02 Users and admin settings",
+      "name": "List staff users (saves user_id / sales_user_id)",
+      "method": "GET",
+      "path": "/v1/users",
+      "who": "manager, md, admin",
+      "roles": [
+        "admin",
+        "manager",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "§20.11 users and roles: every staff member with MFA enrolment and lock state.",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "02 Users and admin settings",
+      "name": "Create a staff user (MFA)",
+      "method": "POST",
+      "path": "/v1/users",
+      "who": "md, admin + signed in with the authenticator app (mfa=true)",
+      "roles": [
+        "admin",
+        "md"
+      ],
+      "mfa_required": true,
+      "auth": "staff",
+      "purpose": "Admin (MFA): a new staff user; the one-time password in the answer is shown once.",
+      "expected_status": 201,
+      "package": "CRM"
+    },
+    {
+      "folder": "02 Users and admin settings",
+      "name": "Edit a staff user (MFA)",
+      "method": "PATCH",
+      "path": "/v1/users/{user_id}",
+      "who": "md, admin + signed in with the authenticator app (mfa=true)",
+      "roles": [
+        "admin",
+        "md"
+      ],
+      "mfa_required": true,
+      "auth": "staff",
+      "purpose": "Admin (MFA): role, active flag, phone, languages / countries / categories for assignment (§9), alert channels.",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "02 Users and admin settings",
+      "name": "Reset a user's authenticator (lost phone, MFA)",
+      "method": "POST",
+      "path": "/v1/users/{user_id}/reset-mfa",
+      "who": "md, admin + signed in with the authenticator app (mfa=true)",
+      "roles": [
+        "admin",
+        "md"
+      ],
+      "mfa_required": true,
+      "auth": "staff",
+      "purpose": "A lost authenticator: sessions end; the person signs in with an email code and enrols again.",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "02 Users and admin settings",
+      "name": "Unlock a locked-out user (MFA)",
+      "method": "POST",
+      "path": "/v1/users/{user_id}/unlock",
+      "who": "md, admin + signed in with the authenticator app (mfa=true)",
+      "roles": [
+        "admin",
+        "md"
+      ],
+      "mfa_required": true,
+      "auth": "staff",
+      "purpose": "Admin (MFA): lift a lock-out after too many wrong passwords or codes.",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "03 Contacts, companies and deals",
+      "name": "List deals (newest first; saves deal_id)",
+      "method": "GET",
+      "path": "/v1/deals",
+      "who": "sales, manager, md, admin",
+      "roles": [
+        "sales",
+        "manager",
+        "admin",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "§20.3 deals board: by stage, with filters for salesperson, country, product and value (the current quote's total in AED).",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "03 Contacts, companies and deals",
+      "name": "Get deal (saves deal_version, contact_id)",
+      "method": "GET",
+      "path": "/v1/deals/{deal_id}",
+      "who": "sales, manager, md, admin",
+      "roles": [
+        "sales",
+        "manager",
+        "admin",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "§20.4 deal page: buyer, company, requirement, stage, AI state, AI summary (§7A.2), opt-out.",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "03 Contacts, companies and deals",
+      "name": "Deal timeline (messages, AI replies, stage changes)",
+      "method": "GET",
+      "path": "/v1/deals/{deal_id}/timeline",
+      "who": "sales, manager, md, admin",
+      "roles": [
+        "sales",
+        "manager",
+        "admin",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "§20.4 full timeline: every message, call transcript, stage change and AI action (newest first).",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "05 Quotes, approvals and change requests",
+      "name": "Quote versions of the deal (saves version_id)",
+      "method": "GET",
+      "path": "/v1/deals/{deal_id}/quotes",
+      "who": "sales, manager, md, admin",
+      "roles": [
+        "sales",
+        "manager",
+        "admin",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "§20.4 quote versions, newest first (the screen compares two side by side).",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "05 Quotes, approvals and change requests",
+      "name": "Draft a quote (the backend prices it)",
+      "method": "POST",
+      "path": "/v1/deals/{deal_id}/quotes",
+      "who": "sales, manager, md, admin",
+      "roles": [
+        "sales",
+        "manager",
+        "admin",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "Ask the backend to build the quote from the price list (§11.1).",
+      "expected_status": 201,
+      "package": "CRM"
+    },
+    {
+      "folder": "03 Contacts, companies and deals",
+      "name": "Move deal stage (example: LOST)",
+      "method": "POST",
+      "path": "/v1/deals/{deal_id}/stage",
+      "who": "sales, manager, md, admin",
+      "roles": [
+        "sales",
+        "manager",
+        "admin",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "Move the deal to another stage (rules in §5; LOST needs a reason).",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "05 Quotes, approvals and change requests",
+      "name": "Revise the quote (prices, quantity, currency)",
+      "method": "POST",
+      "path": "/v1/deals/{deal_id}/quotes/revise",
+      "who": "sales, manager, md, admin",
+      "roles": [
+        "sales",
+        "manager",
+        "admin",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "§11.3 Edit then approve: a new version; below the minimum goes to the manager first (D3).",
+      "expected_status": 201,
+      "package": "CRM"
+    },
+    {
+      "folder": "03 Contacts, companies and deals",
+      "name": "Switch the AI on / off for a deal",
+      "method": "POST",
+      "path": "/v1/deals/{deal_id}/ai",
+      "who": "manager, md",
+      "roles": [
+        "manager",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "Manager/MD takes over (AI off) or hands the conversation back (AI on).",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "05 Quotes, approvals and change requests",
+      "name": "Manager makes a price offer (MFA)",
+      "method": "POST",
+      "path": "/v1/deals/{deal_id}/offer",
+      "who": "manager, md + signed in with the authenticator app (mfa=true)",
+      "roles": [
+        "manager",
+        "md"
+      ],
+      "mfa_required": true,
+      "auth": "staff",
+      "purpose": "§12 below-minimum alert, manager (MFA): set an approved special price (may be below the range, D3); it becomes a price the AI may state, and `resume_ai` hands the chat back to the AI.",
+      "expected_status": 204,
+      "package": "CRM"
+    },
+    {
+      "folder": "03 Contacts, companies and deals",
+      "name": "Reopen a closed deal (MFA)",
+      "method": "POST",
+      "path": "/v1/deals/{deal_id}/reopen",
+      "who": "manager, md + signed in with the authenticator app (mfa=true)",
+      "roles": [
+        "manager",
+        "md"
+      ],
+      "mfa_required": true,
+      "auth": "staff",
+      "purpose": "§7A.1 / D24: the manager (or MD) reopens a LOST deal to the stage it was lost from; the AI stays paused until a person resumes it.",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "03 Contacts, companies and deals",
+      "name": "Record: salesperson shared a personal contact",
+      "method": "POST",
+      "path": "/v1/deals/{deal_id}/personal-contact-shared",
+      "who": "sales, manager, md, admin",
+      "roles": [
+        "sales",
+        "manager",
+        "admin",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "§14 practical notes: record that the salesperson shared a personal contact with the buyer.",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "03 Contacts, companies and deals",
+      "name": "Staff sends a message to the buyer",
+      "method": "POST",
+      "path": "/v1/deals/{deal_id}/messages",
+      "who": "sales, manager, md, admin",
+      "roles": [
+        "sales",
+        "manager",
+        "admin",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "§14 / D21: reply to the buyer on the same channel and company number, signed with the salesperson's name.",
+      "expected_status": 202,
+      "package": "CRM"
+    },
+    {
+      "folder": "03 Contacts, companies and deals",
+      "name": "Click-to-call the buyer (saves attempt_id)",
+      "method": "POST",
+      "path": "/v1/deals/{deal_id}/call",
+      "who": "sales, manager, md, admin",
+      "roles": [
+        "sales",
+        "manager",
+        "admin",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "§14: click-to-call through the company number.",
+      "expected_status": 202,
+      "package": "CRM"
+    },
+    {
+      "folder": "03 Contacts, companies and deals",
+      "name": "Record a buyer opt-out by hand",
+      "method": "POST",
+      "path": "/v1/deals/{deal_id}/opt-out",
+      "who": "sales, manager, md, admin",
+      "roles": [
+        "sales",
+        "manager",
+        "admin",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "§8.1 step 4: the salesperson records a stop (and the buyer's own reason, if given) after a conversation the buyer started.",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "06 Payment, won and orders",
+      "name": "Record a payment (MFA)",
+      "method": "POST",
+      "path": "/v1/deals/{deal_id}/payments",
+      "who": "sales, manager, md + signed in with the authenticator app (mfa=true)",
+      "roles": [
+        "sales",
+        "manager",
+        "md"
+      ],
+      "mfa_required": true,
+      "auth": "staff",
+      "purpose": "§15.1 / D20: the salesperson (human, MFA) confirms the advance; every detail is optional.",
+      "expected_status": 201,
+      "package": "CRM"
+    },
+    {
+      "folder": "06 Payment, won and orders",
+      "name": "Mark the deal WON (MFA)",
+      "method": "POST",
+      "path": "/v1/deals/{deal_id}/won",
+      "who": "sales, manager, md + signed in with the authenticator app (mfa=true)",
+      "roles": [
+        "sales",
+        "manager",
+        "md"
+      ],
+      "mfa_required": true,
+      "auth": "staff",
+      "purpose": "§15.2: WON (mandatory) with an optional expected re-order date; the order record is created.",
+      "expected_status": 201,
+      "package": "CRM"
+    },
+    {
+      "folder": "06 Payment, won and orders",
+      "name": "Update order status",
+      "method": "PATCH",
+      "path": "/v1/deals/orders/{order_id}",
+      "who": "sales, manager, md",
+      "roles": [
+        "sales",
+        "manager",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "§15.3 order tracking: in production -> ready -> shipped -> delivered (the buyer is told if configured).",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "03 Contacts, companies and deals",
+      "name": "Reassign the deal to a salesperson",
+      "method": "POST",
+      "path": "/v1/deals/{deal_id}/reassign",
+      "who": "manager, md",
+      "roles": [
+        "manager",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "§9.4: the manager or MD reassigns; both salespersons are notified, pending items follow.",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "03 Contacts, companies and deals",
+      "name": "MD takes over the deal",
+      "method": "POST",
+      "path": "/v1/deals/{deal_id}/takeover",
+      "who": "md",
+      "roles": [
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "§3: the MD takes the deal over; the salesperson is read-only until hand-back.",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "03 Contacts, companies and deals",
+      "name": "MD hands the deal back",
+      "method": "POST",
+      "path": "/v1/deals/{deal_id}/handback",
+      "who": "md",
+      "roles": [
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "End an MD or manager takeover: the salesperson can edit and approve again (§3).",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "05 Quotes, approvals and change requests",
+      "name": "Hand-priced quote (custom / unpriced item)",
+      "method": "POST",
+      "path": "/v1/deals/{deal_id}/quotes/manual",
+      "who": "sales, manager, md, admin",
+      "roles": [
+        "sales",
+        "manager",
+        "admin",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "D8 / §23 scenario 5: a quote priced by hand by the salesperson, then approved as usual.",
+      "expected_status": 201,
+      "package": "CRM"
+    },
+    {
+      "folder": "05 Quotes, approvals and change requests",
+      "name": "Get one quote version",
+      "method": "GET",
+      "path": "/v1/quote-versions/{version_id}",
+      "who": "sales, manager, md, admin",
+      "roles": [
+        "sales",
+        "manager",
+        "admin",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "§11.3 quote approval screen: one quote version with its lines, terms, delivery and totals.",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "05 Quotes, approvals and change requests",
+      "name": "Cost view of a quote version (MD only)",
+      "method": "GET",
+      "path": "/v1/quote-versions/{version_id}/costs",
+      "who": "md",
+      "roles": [
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "Cost build-up of each line: MD only (T3).",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "05 Quotes, approvals and change requests",
+      "name": "Open approvals (manager / MD; saves approval_id)",
+      "method": "GET",
+      "path": "/v1/approvals",
+      "who": "manager, md",
+      "roles": [
+        "manager",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "Manager / MD: approvals open (with SLA deadlines, §16) or decided.",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "05 Quotes, approvals and change requests",
+      "name": "Approve / reject a quote or special price (MFA)",
+      "method": "POST",
+      "path": "/v1/approvals/{approval_id}/decision",
+      "who": "sales, manager, md + signed in with the authenticator app (mfa=true)",
+      "roles": [
+        "sales",
+        "manager",
+        "md"
+      ],
+      "mfa_required": true,
+      "auth": "staff",
+      "purpose": "Human + MFA only.",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "05 Quotes, approvals and change requests",
+      "name": "List change requests (saves cr_id)",
+      "method": "GET",
+      "path": "/v1/change-requests",
+      "who": "sales, manager, md, admin",
+      "roles": [
+        "sales",
+        "manager",
+        "admin",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "Open cards with SLA timers, oldest due first.",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "05 Quotes, approvals and change requests",
+      "name": "Get a change request",
+      "method": "GET",
+      "path": "/v1/change-requests/{cr_id}",
+      "who": "sales, manager, md, admin",
+      "roles": [
+        "sales",
+        "manager",
+        "admin",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "§13 change request card: what the buyer asked (their words), current vs requested values, SLA.",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "05 Quotes, approvals and change requests",
+      "name": "Start work on a change request",
+      "method": "POST",
+      "path": "/v1/change-requests/{cr_id}/start",
+      "who": "sales, manager, md, admin",
+      "roles": [
+        "sales",
+        "manager",
+        "admin",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "Take the change request (starts work; the SLA keeps running).",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "05 Quotes, approvals and change requests",
+      "name": "Revise the quote for a change request",
+      "method": "POST",
+      "path": "/v1/change-requests/{cr_id}/revise",
+      "who": "sales, manager, md, admin",
+      "roles": [
+        "sales",
+        "manager",
+        "admin",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "\"Revise quote\": a new version with the edits; approving it resolves the card (§13.3-4).",
+      "expected_status": 201,
+      "package": "CRM"
+    },
+    {
+      "folder": "05 Quotes, approvals and change requests",
+      "name": "Resolve a change request with a version",
+      "method": "POST",
+      "path": "/v1/change-requests/{cr_id}/resolve",
+      "who": "sales, manager, md, admin",
+      "roles": [
+        "sales",
+        "manager",
+        "admin",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "Close the change request as done (a revised quote was sent or the answer given).",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "05 Quotes, approvals and change requests",
+      "name": "Decline a change request",
+      "method": "POST",
+      "path": "/v1/change-requests/{cr_id}/decline",
+      "who": "sales, manager, md, admin",
+      "roles": [
+        "sales",
+        "manager",
+        "admin",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "Decline the change request with a reason the buyer is told.",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "03 Contacts, companies and deals",
+      "name": "My inbox (approvals, change requests, tasks; saves approval_id / cr_id)",
+      "method": "GET",
+      "path": "/v1/inbox",
+      "who": "sales, manager, md, admin",
+      "roles": [
+        "sales",
+        "manager",
+        "admin",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "§20.2: approvals, change requests, below-minimum alerts, buyer messages on handed-over deals.",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "04 Products, stock and price list",
+      "name": "Price tiers of a product (saves tier_id)",
+      "method": "GET",
+      "path": "/v1/products/{product_id}/price-tiers",
+      "who": "sales, manager, md, admin",
+      "roles": [
+        "sales",
+        "manager",
+        "admin",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "§20.7 price list: the quantity tiers of one product (list price and minimum per tier).",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "04 Products, stock and price list",
+      "name": "Add a price tier (MFA)",
+      "method": "POST",
+      "path": "/v1/products/{product_id}/price-tiers",
+      "who": "manager, md, admin + signed in with the authenticator app (mfa=true)",
+      "roles": [
+        "manager",
+        "admin",
+        "md"
+      ],
+      "mfa_required": true,
+      "auth": "staff",
+      "purpose": "Manager (MFA): add a quantity tier (every change is logged, §3).",
+      "expected_status": 201,
+      "package": "CRM"
+    },
+    {
+      "folder": "04 Products, stock and price list",
+      "name": "Edit a price tier (MFA)",
+      "method": "PATCH",
+      "path": "/v1/price-tiers/{tier_id}",
+      "who": "manager, md, admin + signed in with the authenticator app (mfa=true)",
+      "roles": [
+        "manager",
+        "admin",
+        "md"
+      ],
+      "mfa_required": true,
+      "auth": "staff",
+      "purpose": "Manager (MFA): change a tier's prices or quantities (logged with old and new value).",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "04 Products, stock and price list",
+      "name": "Delete a price tier (MFA)",
+      "method": "DELETE",
+      "path": "/v1/price-tiers/{tier_id}",
+      "who": "manager, md, admin + signed in with the authenticator app (mfa=true)",
+      "roles": [
+        "manager",
+        "admin",
+        "md"
+      ],
+      "mfa_required": true,
+      "auth": "staff",
+      "purpose": "Manager (MFA): delete a tier (logged).",
+      "expected_status": 204,
+      "package": "CRM"
+    },
+    {
+      "folder": "04 Products, stock and price list",
+      "name": "Import the price list .xlsx (MFA)",
+      "method": "POST",
+      "path": "/v1/price-list/import",
+      "who": "manager, md, admin + signed in with the authenticator app (mfa=true)",
+      "roles": [
+        "manager",
+        "admin",
+        "md"
+      ],
+      "mfa_required": true,
+      "auth": "staff",
+      "purpose": "Body: the .xlsx file (columns sku, min_qty, max_qty, list_price, min_price, currency).",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "04 Products, stock and price list",
+      "name": "Export the price list .xlsx",
+      "method": "GET",
+      "path": "/v1/price-list/export",
+      "who": "sales, manager, md, admin",
+      "roles": [
+        "sales",
+        "manager",
+        "admin",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "Download the price list as Excel (the same layout the import accepts).",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "04 Products, stock and price list",
+      "name": "Price history of a product",
+      "method": "GET",
+      "path": "/v1/products/{product_id}/history",
+      "who": "sales, manager, md, admin",
+      "roles": [
+        "sales",
+        "manager",
+        "admin",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "§20.7 change history of one product: its CRM-owned fields and its price tiers, newest first.",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "04 Products, stock and price list",
+      "name": "Price list change log",
+      "method": "GET",
+      "path": "/v1/price-list/history",
+      "who": "sales, manager, md, admin",
+      "roles": [
+        "sales",
+        "manager",
+        "admin",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "§20.7 change history of the whole price list (tier edits and Excel imports), newest first.",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "04 Products, stock and price list",
+      "name": "Stock table",
+      "method": "GET",
+      "path": "/v1/stock",
+      "who": "sales, manager, md, admin",
+      "roles": [
+        "sales",
+        "manager",
+        "admin",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "§20.8 stock table: quantity on hand per product or material.",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "04 Products, stock and price list",
+      "name": "Update stock",
+      "method": "PUT",
+      "path": "/v1/stock",
+      "who": "manager, md, admin",
+      "roles": [
+        "manager",
+        "admin",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "Manager or admin: set the quantity on hand of a product or material (logged).",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "04 Products, stock and price list",
+      "name": "Download the product workbook .xlsx (MFA)",
+      "method": "GET",
+      "path": "/v1/catalogue/workbook",
+      "who": "manager, md, admin + signed in with the authenticator app (mfa=true)",
+      "roles": [
+        "manager",
+        "md",
+        "admin"
+      ],
+      "mfa_required": true,
+      "auth": "staff",
+      "purpose": "Download the current catalogue (products, price tiers, categories, how-to sheet).",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "04 Products, stock and price list",
+      "name": "Preview a product workbook upload (MFA, saves workbook_token)",
+      "method": "POST",
+      "path": "/v1/catalogue/workbook/preview",
+      "who": "manager, md, admin + signed in with the authenticator app (mfa=true)",
+      "roles": [
+        "manager",
+        "md",
+        "admin"
+      ],
+      "mfa_required": true,
+      "auth": "staff",
+      "purpose": "Body: the .xlsx file.",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "04 Products, stock and price list",
+      "name": "Apply the previewed workbook (MFA)",
+      "method": "POST",
+      "path": "/v1/catalogue/workbook/apply",
+      "who": "manager, md, admin + signed in with the authenticator app (mfa=true)",
+      "roles": [
+        "manager",
+        "md",
+        "admin"
+      ],
+      "mfa_required": true,
+      "auth": "staff",
+      "purpose": "Body: the SAME .xlsx file as the preview; `token` from the preview.",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "04 Products, stock and price list",
+      "name": "Import the ERP stock list (dry run first)",
+      "method": "POST",
+      "path": "/v1/catalogue/erp-import",
+      "who": "manager, md, admin",
+      "roles": [
+        "manager",
+        "admin",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "D61: body = the ERP stock list (CSV or .xlsx with the columns Category, Item Description, Brand, Unit, OpnStk, In, Out, ClosStk).",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "04 Products, stock and price list",
+      "name": "Link an ERP item to its website product",
+      "method": "PUT",
+      "path": "/v1/catalogue/products/{sku}/website-link",
+      "who": "manager, md, admin",
+      "roles": [
+        "manager",
+        "admin",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "Link an ERP item (a variant) to its website product, or unlink it (null): when the automatic match was not sure, or was wrong.",
+      "expected_status": 204,
+      "package": "CRM"
+    },
+    {
+      "folder": "04 Products, stock and price list",
+      "name": "What the AI may say about a product's packings",
+      "method": "GET",
+      "path": "/v1/catalogue/website-products/{cms_product_id}/variants",
+      "who": "sales, manager, md, admin",
+      "roles": [
+        "sales",
+        "manager",
+        "admin",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "The sellable variants of a website product, as the AI describes them (availability word, the quantities where a better price starts; no amounts).",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "04 Products, stock and price list",
+      "name": "Material rate proposals (saves rate_id)",
+      "method": "GET",
+      "path": "/v1/price-proposals",
+      "who": "manager, md",
+      "roles": [
+        "manager",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "Material price proposals (from the v2 scraper or staff) waiting for the manager's decision.",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "04 Products, stock and price list",
+      "name": "Approve a rate proposal (MFA)",
+      "method": "POST",
+      "path": "/v1/price-proposals/{rate_id}/approve",
+      "who": "manager, md + signed in with the authenticator app (mfa=true)",
+      "roles": [
+        "manager",
+        "md"
+      ],
+      "mfa_required": true,
+      "auth": "staff",
+      "purpose": "Manager (MFA): accept a proposed material rate (may be corrected); it becomes the current rate.",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "04 Products, stock and price list",
+      "name": "Reject a rate proposal (MFA)",
+      "method": "POST",
+      "path": "/v1/price-proposals/{rate_id}/reject",
+      "who": "manager, md + signed in with the authenticator app (mfa=true)",
+      "roles": [
+        "manager",
+        "md"
+      ],
+      "mfa_required": true,
+      "auth": "staff",
+      "purpose": "Manager (MFA): reject a proposed material rate.",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "04 Products, stock and price list",
+      "name": "How fresh the material rates are",
+      "method": "GET",
+      "path": "/v1/materials/freshness",
+      "who": "manager, md",
+      "roles": [
+        "manager",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "How old each material's approved rate is (stale rates block pricing).",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "02 Users and admin settings",
+      "name": "List business settings",
+      "method": "GET",
+      "path": "/v1/settings",
+      "who": "manager, md, admin",
+      "roles": [
+        "admin",
+        "manager",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "§20.11 business settings (timers, follow-up days, VAT, Incoterm, validity, hours, opt-out rules ...).",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "02 Users and admin settings",
+      "name": "Change a business setting (MFA)",
+      "method": "PUT",
+      "path": "/v1/settings/{key}",
+      "who": "manager, md, admin + signed in with the authenticator app (mfa=true)",
+      "roles": [
+        "admin",
+        "manager",
+        "md"
+      ],
+      "mfa_required": true,
+      "auth": "staff",
+      "purpose": "Manager / admin (MFA): change one business setting (validated; logged).",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "02 Users and admin settings",
+      "name": "Switch a feature flag (MFA)",
+      "method": "PUT",
+      "path": "/v1/feature-flags/{key}",
+      "who": "manager, md, admin + signed in with the authenticator app (mfa=true)",
+      "roles": [
+        "admin",
+        "manager",
+        "md"
+      ],
+      "mfa_required": true,
+      "auth": "staff",
+      "purpose": "Manager / admin (MFA): switch a feature on or off (v2 features stay off in v1, D14).",
+      "expected_status": 204,
+      "package": "CRM"
+    },
+    {
+      "folder": "02 Users and admin settings",
+      "name": "Set away / backup colleague",
+      "method": "PUT",
+      "path": "/v1/users/{user_id}/availability",
+      "who": "sales, manager, md, admin",
+      "roles": [
+        "sales",
+        "manager",
+        "admin",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "§9.3: away / holiday with a backup (the manager, an admin, or the user themself).",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "07 Dashboards and exports",
+      "name": "Dashboard summary (manager / MD)",
+      "method": "GET",
+      "path": "/v1/dashboard/summary",
+      "who": "manager, md",
+      "roles": [
+        "manager",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "Compact pipeline summary: deals by stage, open pipeline value, approvals pending / overdue, open tasks.",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "02 Users and admin settings",
+      "name": "Company details for quotes",
+      "method": "GET",
+      "path": "/v1/company",
+      "who": "manager, md, admin",
+      "roles": [
+        "admin",
+        "md",
+        "manager"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "The company details printed on quotes and summaries, and what staff have set.",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "02 Users and admin settings",
+      "name": "Edit company details (MFA)",
+      "method": "PATCH",
+      "path": "/v1/company",
+      "who": "manager, md, admin + signed in with the authenticator app (mfa=true)",
+      "roles": [
+        "admin",
+        "md",
+        "manager"
+      ],
+      "mfa_required": true,
+      "auth": "staff",
+      "purpose": "Admin / MD / manager (MFA): change details; live on new quotes within 30 seconds.",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "02 Users and admin settings",
+      "name": "Upload the quote logo (MFA)",
+      "method": "PUT",
+      "path": "/v1/company/logo",
+      "who": "manager, md, admin + signed in with the authenticator app (mfa=true)",
+      "roles": [
+        "admin",
+        "md",
+        "manager"
+      ],
+      "mfa_required": true,
+      "auth": "staff",
+      "purpose": "Body: the PNG or JPEG file itself (`Content-Type: image/png` or `image/jpeg`), max 200 KB.",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "02 Users and admin settings",
+      "name": "Remove the quote logo (MFA)",
+      "method": "DELETE",
+      "path": "/v1/company/logo",
+      "who": "manager, md, admin + signed in with the authenticator app (mfa=true)",
+      "roles": [
+        "admin",
+        "md",
+        "manager"
+      ],
+      "mfa_required": true,
+      "auth": "staff",
+      "purpose": "Remove the logo from quotes.",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "02 Users and admin settings",
+      "name": "Kill switch - read level",
+      "method": "GET",
+      "path": "/v1/admin/kill-switch",
+      "who": "manager, md, admin",
+      "roles": [
+        "admin",
+        "manager",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "D35 kill switch: the current level and what it stops.",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "02 Users and admin settings",
+      "name": "Kill switch - set level (MFA)",
+      "method": "PUT",
+      "path": "/v1/admin/kill-switch",
+      "who": "md, admin + signed in with the authenticator app (mfa=true)",
+      "roles": [
+        "admin",
+        "md"
+      ],
+      "mfa_required": true,
+      "auth": "staff",
+      "purpose": "Admin or MD (MFA): set the kill-switch level (off, marketing, calls, text_only, hold); logged.",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "03 Contacts, companies and deals",
+      "name": "Search contacts (by buyer_phone; saves contact_id)",
+      "method": "GET",
+      "path": "/v1/contacts",
+      "who": "sales, manager, md, admin",
+      "roles": [
+        "sales",
+        "manager",
+        "admin",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "Search by name, email or phone digits.",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "03 Contacts, companies and deals",
+      "name": "Get contact",
+      "method": "GET",
+      "path": "/v1/contacts/{contact_id}",
+      "who": "sales, manager, md, admin",
+      "roles": [
+        "sales",
+        "manager",
+        "admin",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "§20.6 one contact (a salesperson only for contacts of their own deals).",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "03 Contacts, companies and deals",
+      "name": "Edit contact",
+      "method": "PATCH",
+      "path": "/v1/contacts/{contact_id}",
+      "who": "sales, manager, md, admin",
+      "roles": [
+        "sales",
+        "manager",
+        "admin",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "Edit name, designation, company, preferred channel, language, time zone (phone / email change through the deal).",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "03 Contacts, companies and deals",
+      "name": "List buyer companies",
+      "method": "GET",
+      "path": "/v1/companies",
+      "who": "sales, manager, md, admin",
+      "roles": [
+        "sales",
+        "manager",
+        "admin",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "§20.6 companies: search by name, newest first.",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "03 Contacts, companies and deals",
+      "name": "Create a buyer company (saves company_id)",
+      "method": "POST",
+      "path": "/v1/companies",
+      "who": "sales, manager, md, admin",
+      "roles": [
+        "sales",
+        "manager",
+        "admin",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "Create a company record.",
+      "expected_status": 201,
+      "package": "CRM"
+    },
+    {
+      "folder": "03 Contacts, companies and deals",
+      "name": "Edit a buyer company",
+      "method": "PATCH",
+      "path": "/v1/companies/{company_id}",
+      "who": "sales, manager, md, admin",
+      "roles": [
+        "sales",
+        "manager",
+        "admin",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "Edit a company record (logged); a salesperson only a company they may see (L3).",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "04 Products, stock and price list",
+      "name": "List products (saves product_id)",
+      "method": "GET",
+      "path": "/v1/products",
+      "who": "sales, manager, md, admin",
+      "roles": [
+        "sales",
+        "manager",
+        "admin",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "§20.7 product catalogue with the CRM-owned fields (MOQ, lead time, quotable) and CMS sync state.",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "04 Products, stock and price list",
+      "name": "Get product",
+      "method": "GET",
+      "path": "/v1/products/{product_id}",
+      "who": "sales, manager, md, admin",
+      "roles": [
+        "sales",
+        "manager",
+        "admin",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "One product with its specification (from the CMS) and CRM-owned fields.",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "04 Products, stock and price list",
+      "name": "Edit product (MFA)",
+      "method": "PATCH",
+      "path": "/v1/products/{product_id}",
+      "who": "manager, md + signed in with the authenticator app (mfa=true)",
+      "roles": [
+        "manager",
+        "md"
+      ],
+      "mfa_required": true,
+      "auth": "staff",
+      "purpose": "Manager (MFA): MOQ for quoting, default delivery time, quotable/active (D22: CRM-owned fields).",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "06 Payment, won and orders",
+      "name": "List orders (saves order_id)",
+      "method": "GET",
+      "path": "/v1/orders",
+      "who": "sales, manager, md, admin",
+      "roles": [
+        "sales",
+        "manager",
+        "admin",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "§20.9 orders (a salesperson: their own deals), newest first.",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "04 Products, stock and price list",
+      "name": "Currency rates to AED",
+      "method": "GET",
+      "path": "/v1/fx-rates",
+      "who": "manager, md",
+      "roles": [
+        "manager",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "The latest rate per currency (the one quotes use).",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "04 Products, stock and price list",
+      "name": "Set a currency rate (MFA)",
+      "method": "POST",
+      "path": "/v1/fx-rates",
+      "who": "manager, md + signed in with the authenticator app (mfa=true)",
+      "roles": [
+        "manager",
+        "md"
+      ],
+      "mfa_required": true,
+      "auth": "staff",
+      "purpose": "D38 \"the manager can override\": a manual rate for a day (it replaces that day's rate).",
+      "expected_status": 201,
+      "package": "CRM"
+    },
+    {
+      "folder": "07 Dashboards and exports",
+      "name": "Salesperson dashboard",
+      "method": "GET",
+      "path": "/v1/dashboards/salesperson",
+      "who": "sales, manager, md, admin",
+      "roles": [
+        "sales",
+        "manager",
+        "admin",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "§21 salesperson: my open deals by stage, items waiting for me, response times, sent and won.",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "07 Dashboards and exports",
+      "name": "Manager dashboard",
+      "method": "GET",
+      "path": "/v1/dashboards/manager",
+      "who": "manager, md",
+      "roles": [
+        "manager",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "§21 manager: everyone's board, below-minimum requests, change requests by type, SLA breaches, price-list changes, plus opt-outs and the buyers' own reasons (§8.1).",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "07 Dashboards and exports",
+      "name": "MD dashboard",
+      "method": "GET",
+      "path": "/v1/dashboards/md",
+      "who": "md",
+      "roles": [
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "§21 MD: pipeline by stage, win rate, average discount from list, deals by country / category / channel, top buyers, takeover queue.",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "07 Dashboards and exports",
+      "name": "Export a list as CSV / XLSX",
+      "method": "GET",
+      "path": "/v1/exports/{entity}",
+      "who": "sales, manager, md, admin",
+      "roles": [
+        "sales",
+        "manager",
+        "admin",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "§20.12: a list as CSV or XLSX (a salesperson exports only their own deals and orders; Admin / IT only the product list, L4: §3 gives it users, settings and the catalogue, not customer data).",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "02 Users and admin settings",
+      "name": "List message texts (saves text_key)",
+      "method": "GET",
+      "path": "/v1/texts",
+      "who": "manager, md, admin",
+      "roles": [
+        "manager",
+        "md",
+        "admin"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "Every editable text: the English in use, the built-in English, its placeholders and the state of each language.",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "02 Users and admin settings",
+      "name": "Edit a message text (MFA)",
+      "method": "PUT",
+      "path": "/v1/texts/{key}",
+      "who": "manager, md + signed in with the authenticator app (mfa=true)",
+      "roles": [
+        "manager",
+        "md"
+      ],
+      "mfa_required": true,
+      "auth": "staff",
+      "purpose": "Manager / MD (MFA): new English text, live within 30 seconds; buyer and AI texts are then translated by the AI.",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "02 Users and admin settings",
+      "name": "Reset a message text to default (MFA)",
+      "method": "POST",
+      "path": "/v1/texts/{key}/reset",
+      "who": "manager, md + signed in with the authenticator app (mfa=true)",
+      "roles": [
+        "manager",
+        "md"
+      ],
+      "mfa_required": true,
+      "auth": "staff",
+      "purpose": "Manager / MD (MFA): back to the built-in wording in every language (the history keeps the edits).",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "02 Users and admin settings",
+      "name": "Message text history",
+      "method": "GET",
+      "path": "/v1/texts/{key}/history",
+      "who": "manager, md, admin",
+      "roles": [
+        "manager",
+        "md",
+        "admin"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "Every change of one text, newest first: who, when, old and new text (the MD's view).",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "02 Users and admin settings",
+      "name": "Translate missing texts (MFA)",
+      "method": "POST",
+      "path": "/v1/texts/translate-missing",
+      "who": "manager, md + signed in with the authenticator app (mfa=true)",
+      "roles": [
+        "manager",
+        "md"
+      ],
+      "mfa_required": true,
+      "auth": "staff",
+      "purpose": "Manager / MD (MFA): queue AI translations for every text without one (built-in texts included).",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "09 Buyer simulation - WhatsApp",
+      "name": "Meta webhook verification (hub.challenge)",
+      "method": "GET",
+      "path": "/webhooks/whatsapp",
+      "who": "Meta (WhatsApp Cloud API): header X-Hub-Signature-256 = HMAC-SHA256 of the raw body with the app secret",
+      "roles": [],
+      "mfa_required": false,
+      "auth": "none",
+      "purpose": "Whatsapp Verify",
+      "expected_status": 200,
+      "package": "Automation"
+    },
+    {
+      "folder": "09 Buyer simulation - WhatsApp",
+      "name": "Buyer sends a WhatsApp message (signed)",
+      "method": "POST",
+      "path": "/webhooks/whatsapp",
+      "who": "Meta (WhatsApp Cloud API): header X-Hub-Signature-256 = HMAC-SHA256 of the raw body with the app secret",
+      "roles": [],
+      "mfa_required": false,
+      "auth": "none",
+      "purpose": "Whatsapp Events",
+      "expected_status": 200,
+      "package": "Automation"
+    },
+    {
+      "folder": "13 Telnyx call webhooks",
+      "name": "Alert call - staff pressed a key (signed URL)",
+      "method": "POST",
+      "path": "/webhooks/telnyx/gather/{attempt_id}",
+      "who": "Telnyx: signed per-call URL token ?t=... (plus an Ed25519 signature header when the Telnyx public key is configured)",
+      "roles": [],
+      "mfa_required": false,
+      "auth": "none",
+      "purpose": "Telnyx Gather",
+      "expected_status": 200,
+      "package": "Automation"
+    },
+    {
+      "folder": "13 Telnyx call webhooks",
+      "name": "Alert call - status update (signed URL)",
+      "method": "POST",
+      "path": "/webhooks/telnyx/status/{attempt_id}",
+      "who": "Telnyx: signed per-call URL token ?t=... (plus an Ed25519 signature header when the Telnyx public key is configured)",
+      "roles": [],
+      "mfa_required": false,
+      "auth": "none",
+      "purpose": "Telnyx Status",
+      "expected_status": 204,
+      "package": "Automation"
+    },
+    {
+      "folder": "12 Unsubscribe link",
+      "name": "Open the unsubscribe page (changes nothing)",
+      "method": "GET",
+      "path": "/v1/public/unsubscribe",
+      "who": "The buyer (anyone holding the signed link from an email)",
+      "roles": [],
+      "mfa_required": false,
+      "auth": "none",
+      "purpose": "The page behind the link: one button, an optional reason (a GET changes nothing).",
+      "expected_status": 200,
+      "package": "Automation"
+    },
+    {
+      "folder": "12 Unsubscribe link",
+      "name": "Press Unsubscribe (stops every channel)",
+      "method": "POST",
+      "path": "/v1/public/unsubscribe",
+      "who": "The buyer (anyone holding the signed link from an email)",
+      "roles": [],
+      "mfa_required": false,
+      "auth": "none",
+      "purpose": "Stops every channel at once (§8.1 step 2) and records the optional reason (step 4).",
+      "expected_status": 200,
+      "package": "Automation"
+    },
+    {
+      "folder": "11 CMS publish webhook",
+      "name": "CMS publishes a product (signed)",
+      "method": "POST",
+      "path": "/webhooks/cms",
+      "who": "The website CMS: headers X-Kx-Timestamp + X-Kx-Signature (HMAC-SHA256 of '<timestamp>.<body>'), max 5 minutes old",
+      "roles": [],
+      "mfa_required": false,
+      "auth": "none",
+      "purpose": "Cms Published",
+      "expected_status": 200,
+      "package": "Automation"
+    },
+    {
+      "folder": "10 Buyer simulation - Website chat",
+      "name": "1. Start a website chat session",
+      "method": "POST",
+      "path": "/v1/public/sessions",
+      "who": "A website visitor (Turnstile human check on staging/production)",
+      "roles": [],
+      "mfa_required": false,
+      "auth": "none",
+      "purpose": "§6 step 1: start a website conversation (Turnstile-checked).",
+      "expected_status": 201,
+      "package": "Website"
+    },
+    {
+      "folder": "10 Buyer simulation - Website chat",
+      "name": "2. Visitor sends a chat message",
+      "method": "POST",
+      "path": "/v1/public/sessions/{session_id}/messages",
+      "who": "A website visitor: header Authorization: Bearer <session_token>",
+      "roles": [],
+      "mfa_required": false,
+      "auth": "website_session",
+      "purpose": "One chat turn (§6 steps 2-6) through the same agents, guard and router as WhatsApp; the page moves with it (D55).",
+      "expected_status": 200,
+      "package": "Website"
+    },
+    {
+      "folder": "10 Buyer simulation - Website chat",
+      "name": "4. Ask for a live-voice room token",
+      "method": "POST",
+      "path": "/v1/public/sessions/{session_id}/voice",
+      "who": "A website visitor: header Authorization: Bearer <session_token>",
+      "roles": [],
+      "mfa_required": false,
+      "auth": "website_session",
+      "purpose": "A LiveKit room token for live voice (participant metadata: deal_ref, language, session_id).",
+      "expected_status": 200,
+      "package": "Website"
+    },
+    {
+      "folder": "10 Buyer simulation - Website chat",
+      "name": "3. Visitor types phone / email (identify)",
+      "method": "POST",
+      "path": "/v1/public/sessions/{session_id}/identify",
+      "who": "A website visitor: header Authorization: Bearer <session_token>",
+      "roles": [],
+      "mfa_required": false,
+      "auth": "website_session",
+      "purpose": "§6 step 7: the visitor typed their phone or email; a returning buyer is recognised now, never before.",
+      "expected_status": 200,
+      "package": "Website"
+    },
+    {
+      "folder": "10 Buyer simulation - Website chat",
+      "name": "5. Contact card with the WhatsApp / email ticks",
+      "method": "POST",
+      "path": "/v1/public/sessions/{session_id}/contact",
+      "who": "A website visitor: header Authorization: Bearer <session_token>",
+      "roles": [],
+      "mfa_required": false,
+      "auth": "website_session",
+      "purpose": "The chat's contact card (D59): details plus the WhatsApp / email opt-ins with their wording.",
+      "expected_status": 200,
+      "package": "Website"
+    },
+    {
+      "folder": "10 Buyer simulation - Website chat",
+      "name": "6. Visitor moved (page, product, list, idle)",
+      "method": "POST",
+      "path": "/v1/public/sessions/{session_id}/events",
+      "who": "A website visitor: header Authorization: Bearer <session_token>",
+      "roles": [],
+      "mfa_required": false,
+      "auth": "website_session",
+      "purpose": "The visitor moved on the site.",
+      "expected_status": 200,
+      "package": "Website"
+    },
+    {
+      "folder": "10 Buyer simulation - Website chat",
+      "name": "7. Enquiry desk on the Contact page",
+      "method": "POST",
+      "path": "/v1/public/enquiries",
+      "who": "public (no sign-in)",
+      "roles": [],
+      "mfa_required": false,
+      "auth": "none",
+      "purpose": "CT-01 enquiry desk (replaces `mailto:`).",
+      "expected_status": 201,
+      "package": "Website"
+    },
+    {
+      "folder": "08 Channels admin",
+      "name": "Company channel accounts (saves account_id)",
+      "method": "GET",
+      "path": "/v1/admin/channel-accounts",
+      "who": "manager, md, admin",
+      "roles": [
+        "admin",
+        "manager",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "§20.11 company WhatsApp numbers and email addresses, with the countries each number serves.",
+      "expected_status": 200,
+      "package": "Automation"
+    },
+    {
+      "folder": "08 Channels admin",
+      "name": "Edit a channel account (admin, MFA)",
+      "method": "PATCH",
+      "path": "/v1/admin/channel-accounts/{account_id}",
+      "who": "admin + signed in with the authenticator app (mfa=true)",
+      "roles": [
+        "admin"
+      ],
+      "mfa_required": true,
+      "auth": "staff",
+      "purpose": "Regional routing for WhatsApp numbers: which countries a number serves, the default number.",
+      "expected_status": 200,
+      "package": "Automation"
+    },
+    {
+      "folder": "08 Channels admin",
+      "name": "Message templates (saves template_id)",
+      "method": "GET",
+      "path": "/v1/admin/message-templates",
+      "who": "manager, md, admin",
+      "roles": [
+        "admin",
+        "manager",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "§20.11 message templates and Meta's approval state, every version (the history), newest first; `live` marks the version being sent.",
+      "expected_status": 200,
+      "package": "Automation"
+    },
+    {
+      "folder": "08 Channels admin",
+      "name": "Create / update a message template (MFA)",
+      "method": "PUT",
+      "path": "/v1/admin/message-templates",
+      "who": "manager, md, admin + signed in with the authenticator app (mfa=true)",
+      "roles": [
+        "manager",
+        "md",
+        "admin"
+      ],
+      "mfa_required": true,
+      "auth": "staff",
+      "purpose": "Add or change a template.",
+      "expected_status": 200,
+      "package": "Automation"
+    },
+    {
+      "folder": "08 Channels admin",
+      "name": "Set a template's provider status (MFA)",
+      "method": "POST",
+      "path": "/v1/admin/message-templates/{template_id}/status",
+      "who": "manager, md, admin + signed in with the authenticator app (mfa=true)",
+      "roles": [
+        "manager",
+        "md",
+        "admin"
+      ],
+      "mfa_required": true,
+      "auth": "staff",
+      "purpose": "Record Meta's decision on a WhatsApp template version.",
+      "expected_status": 200,
+      "package": "Automation"
+    },
+    {
+      "folder": "15 CMS: website content and editors",
+      "name": "Site",
+      "method": "GET",
+      "path": "/v1/content/site",
+      "who": "public (no sign-in)",
+      "roles": [],
+      "mfa_required": false,
+      "auth": "none",
+      "purpose": "Site settings: company name, phones, emails, addresses, hours, social links, announcement bar, theme colours and fonts, the assistant's fixed texts, and whether product pages (PG-03) are live.",
+      "expected_status": 200,
+      "package": "CMS"
+    },
+    {
+      "folder": "15 CMS: website content and editors",
+      "name": "Site manifest",
+      "method": "GET",
+      "path": "/v1/content/manifest",
+      "who": "public (no sign-in)",
+      "roles": [],
+      "mfa_required": false,
+      "auth": "none",
+      "purpose": "D55: the site map the AI assistant uses (pages and their section ids, families with their names and synonyms in six languages, products with their paths, factory-tour chapters).",
+      "expected_status": 200,
+      "package": "CMS"
+    },
+    {
+      "folder": "15 CMS: website content and editors",
+      "name": "Page",
+      "method": "GET",
+      "path": "/v1/content/pages/{slug}",
+      "who": "public (no sign-in)",
+      "roles": [],
+      "mfa_required": false,
+      "auth": "none",
+      "purpose": "One page with its section blocks (home, products, about, quality, clients, contact, privacy).",
+      "expected_status": 200,
+      "package": "CMS"
+    },
+    {
+      "folder": "15 CMS: website content and editors",
+      "name": "Families",
+      "method": "GET",
+      "path": "/v1/content/families",
+      "who": "public (no sign-in)",
+      "roles": [],
+      "mfa_required": false,
+      "auth": "none",
+      "purpose": "The product families, in their display order (HM-01, HM-04, PR-02).",
+      "expected_status": 200,
+      "package": "CMS"
+    },
+    {
+      "folder": "15 CMS: website content and editors",
+      "name": "Products",
+      "method": "GET",
+      "path": "/v1/content/products",
+      "who": "public (no sign-in)",
+      "roles": [],
+      "mfa_required": false,
+      "auth": "none",
+      "purpose": "The catalogue (PR-03), in catalogue order; filters as on the site: `family`, `q`, `range`.",
+      "expected_status": 200,
+      "package": "CMS"
+    },
+    {
+      "folder": "15 CMS: website content and editors",
+      "name": "Product",
+      "method": "GET",
+      "path": "/v1/content/products/{product_id}",
+      "who": "public (no sign-in)",
+      "roles": [],
+      "mfa_required": false,
+      "auth": "none",
+      "purpose": "PG-03: one product with its family, previous / next in the catalogue (PD-04) and up to four more from the same family (PD-05).",
+      "expected_status": 200,
+      "package": "CMS"
+    },
+    {
+      "folder": "15 CMS: website content and editors",
+      "name": "Collection",
+      "method": "GET",
+      "path": "/v1/content/collections/{collection}",
+      "who": "public (no sign-in)",
+      "roles": [],
+      "mfa_required": false,
+      "auth": "none",
+      "purpose": "Any other collection, in display order: `tour_chapters` (HM-05), `stations` (QA-02), `faqs`, `certificates` (QA-04), `clients` (CL-02), `industries` (CL-01), `stories` (CL-03), `leadership` (AB-05, AB-06).",
+      "expected_status": 200,
+      "package": "CMS"
+    },
+    {
+      "folder": "15 CMS: website content and editors",
+      "name": "Sitemap",
+      "method": "GET",
+      "path": "/v1/content/sitemap",
+      "who": "public (no sign-in)",
+      "roles": [],
+      "mfa_required": false,
+      "auth": "none",
+      "purpose": "Every published page, family and product, in English and Arabic, for `/sitemap.xml` (§9).",
+      "expected_status": 200,
+      "package": "CMS"
+    },
+    {
+      "folder": "15 CMS: website content and editors",
+      "name": "Redirects",
+      "method": "GET",
+      "path": "/v1/content/redirects",
+      "who": "public (no sign-in)",
+      "roles": [],
+      "mfa_required": false,
+      "auth": "none",
+      "purpose": "Old-site addresses that move permanently to their new page (design doc §9): each product's `legacy_paths` (e.g.",
+      "expected_status": 200,
+      "package": "CMS"
+    },
+    {
+      "folder": "15 CMS: website content and editors",
+      "name": "Collections",
+      "method": "GET",
+      "path": "/v1/cms/collections",
+      "who": "manager, md, admin, content_editor",
+      "roles": [
+        "content_editor",
+        "admin",
+        "manager",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "Every content type with its JSON Schema (fields, types, limits), to draw the editor forms.",
+      "expected_status": 200,
+      "package": "CMS"
+    },
+    {
+      "folder": "15 CMS: website content and editors",
+      "name": "List documents",
+      "method": "GET",
+      "path": "/v1/cms/collections/{collection}",
+      "who": "manager, md, admin, content_editor",
+      "roles": [
+        "content_editor",
+        "admin",
+        "manager",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "The documents of one content type, in display order, with their state (draft / published / changed = live with unpublished edits).",
+      "expected_status": 200,
+      "package": "CMS"
+    },
+    {
+      "folder": "15 CMS: website content and editors",
+      "name": "Get document",
+      "method": "GET",
+      "path": "/v1/cms/collections/{collection}/{key}",
+      "who": "manager, md, admin, content_editor",
+      "roles": [
+        "content_editor",
+        "admin",
+        "manager",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "One document: its open draft (with `revision`, needed to save) and its live version.",
+      "expected_status": 200,
+      "package": "CMS"
+    },
+    {
+      "folder": "15 CMS: website content and editors",
+      "name": "Save draft",
+      "method": "PUT",
+      "path": "/v1/cms/collections/{collection}/{key}",
+      "who": "manager, md, admin, content_editor",
+      "roles": [
+        "content_editor",
+        "admin",
+        "manager",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "Save the draft (creates the document when new).",
+      "expected_status": 200,
+      "package": "CMS"
+    },
+    {
+      "folder": "15 CMS: website content and editors",
+      "name": "Publish",
+      "method": "POST",
+      "path": "/v1/cms/collections/{collection}/{key}/publish",
+      "who": "manager, md, admin, content_editor",
+      "roles": [
+        "content_editor",
+        "admin",
+        "manager",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "Put the draft live.",
+      "expected_status": 200,
+      "package": "CMS"
+    },
+    {
+      "folder": "15 CMS: website content and editors",
+      "name": "Unpublish",
+      "method": "POST",
+      "path": "/v1/cms/collections/{collection}/{key}/unpublish",
+      "who": "manager, md, admin, content_editor",
+      "roles": [
+        "content_editor",
+        "admin",
+        "manager",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "Take the document off the website (versions are kept; publish again to bring it back).",
+      "expected_status": 204,
+      "package": "CMS"
+    },
+    {
+      "folder": "15 CMS: website content and editors",
+      "name": "Discard draft",
+      "method": "DELETE",
+      "path": "/v1/cms/collections/{collection}/{key}/draft",
+      "who": "manager, md, admin, content_editor",
+      "roles": [
+        "content_editor",
+        "admin",
+        "manager",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "Throw the open draft away (a document that was never published disappears with it).",
+      "expected_status": 204,
+      "package": "CMS"
+    },
+    {
+      "folder": "15 CMS: website content and editors",
+      "name": "Versions",
+      "method": "GET",
+      "path": "/v1/cms/collections/{collection}/{key}/versions",
+      "who": "manager, md, admin, content_editor",
+      "roles": [
+        "content_editor",
+        "admin",
+        "manager",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "Every version, newest first (each publish is kept).",
+      "expected_status": 200,
+      "package": "CMS"
+    },
+    {
+      "folder": "15 CMS: website content and editors",
+      "name": "Restore",
+      "method": "POST",
+      "path": "/v1/cms/collections/{collection}/{key}/versions/{number}/restore",
+      "who": "manager, md, admin, content_editor",
+      "roles": [
+        "content_editor",
+        "admin",
+        "manager",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "Copy an earlier version into the draft; publish it to go live again.",
+      "expected_status": 200,
+      "package": "CMS"
+    },
+    {
+      "folder": "15 CMS: website content and editors",
+      "name": "Preview token",
+      "method": "POST",
+      "path": "/v1/cms/preview-token",
+      "who": "manager, md, admin, content_editor",
+      "roles": [
+        "content_editor",
+        "admin",
+        "manager",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "A 30-minute token that makes the website show drafts (Next.js draft mode).",
+      "expected_status": 200,
+      "package": "CMS"
+    },
+    {
+      "folder": "15 CMS: website content and editors",
+      "name": "List media",
+      "method": "GET",
+      "path": "/v1/cms/media",
+      "who": "manager, md, admin, content_editor",
+      "roles": [
+        "content_editor",
+        "admin",
+        "manager",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "The library, newest first (`kind` = image, video, application (PDF) or model (3D)).",
+      "expected_status": 200,
+      "package": "CMS"
+    },
+    {
+      "folder": "15 CMS: website content and editors",
+      "name": "Start upload",
+      "method": "POST",
+      "path": "/v1/cms/media/uploads",
+      "who": "manager, md, admin, content_editor",
+      "roles": [
+        "content_editor",
+        "admin",
+        "manager",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "Step 1: ask where to upload.",
+      "expected_status": 201,
+      "package": "CMS"
+    },
+    {
+      "folder": "15 CMS: website content and editors",
+      "name": "Confirm",
+      "method": "POST",
+      "path": "/v1/cms/media/{asset_id}/confirm",
+      "who": "manager, md, admin, content_editor",
+      "roles": [
+        "content_editor",
+        "admin",
+        "manager",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "Step 2: the browser's PUT succeeded; the file joins the library.",
+      "expected_status": 200,
+      "package": "CMS"
+    },
+    {
+      "folder": "15 CMS: website content and editors",
+      "name": "Update alt",
+      "method": "PATCH",
+      "path": "/v1/cms/media/{asset_id}",
+      "who": "manager, md, admin, content_editor",
+      "roles": [
+        "content_editor",
+        "admin",
+        "manager",
+        "md"
+      ],
+      "mfa_required": false,
+      "auth": "staff",
+      "purpose": "Alt text per language (accessibility and SEO).",
+      "expected_status": 200,
+      "package": "CMS"
+    },
+    {
+      "folder": "00 Health and keys",
+      "name": "Health check (API up)",
+      "method": "GET",
+      "path": "/healthz",
+      "who": "public (monitoring)",
+      "roles": [],
+      "mfa_required": false,
+      "auth": "none",
+      "purpose": "Liveness: the API process answers.",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "00 Health and keys",
+      "name": "Health check (scheduler and workers)",
+      "method": "GET",
+      "path": "/healthz/beat",
+      "who": "public (monitoring)",
+      "roles": [],
+      "mfa_required": false,
+      "auth": "none",
+      "purpose": "D46: UptimeRobot checks this from outside; 503 = Beat, the broker or the workers stopped (or the oldest due job is waiting too long).",
+      "expected_status": 200,
+      "package": "CRM"
+    },
+    {
+      "folder": "00 Health and keys",
+      "name": "Public key for staff tokens (JWKS)",
+      "method": "GET",
+      "path": "/.well-known/jwks.json",
+      "who": "public",
+      "roles": [],
+      "mfa_required": false,
+      "auth": "none",
+      "purpose": "The public key that verifies staff access tokens (RS256, D26).",
+      "expected_status": 200,
+      "package": "CRM"
+    }
+  ]
+}

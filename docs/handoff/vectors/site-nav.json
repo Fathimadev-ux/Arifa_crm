@@ -1,0 +1,496 @@
+{
+ "about": "D55 / D57 site navigation vectors: the visitor's words (and where they are) -> the one action the instant resolver takes, or null (leave it to the agent). Checked against the real site by tests/integration/test_site_nav_eval.py; given to the website as docs/handoff/vectors/site-nav.json for its own optimistic resolver. `expect` omits id, layer, resolved and the default view.",
+ "cases": [
+  {
+   "text": "show me aluminium containers",
+   "lang": "en",
+   "expect": {
+    "type": "show_family",
+    "family": "containers"
+   }
+  },
+  {
+   "text": "kitchen foil please",
+   "lang": "en",
+   "expect": {
+    "type": "show_family",
+    "family": "foil"
+   }
+  },
+  {
+   "text": "do you have foil containers?",
+   "lang": "en",
+   "expect": {
+    "type": "show_family",
+    "family": "containers"
+   }
+  },
+  {
+   "text": "I want to see serving platters",
+   "lang": "en",
+   "expect": {
+    "type": "show_family",
+    "family": "platters"
+   }
+  },
+  {
+   "text": "show me cups",
+   "lang": "en",
+   "expect": {
+    "type": "show_family",
+    "family": "cups-trays"
+   }
+  },
+  {
+   "text": "baking cups",
+   "lang": "en",
+   "expect": {
+    "type": "show_family",
+    "family": "cups-trays"
+   }
+  },
+  {
+   "text": "cooking pots",
+   "lang": "en",
+   "expect": {
+    "type": "show_family",
+    "family": "pots"
+   }
+  },
+  {
+   "text": "microwave containers",
+   "lang": "en",
+   "expect": {
+    "type": "show_family",
+    "family": "microwave"
+   }
+  },
+  {
+   "text": "black containers",
+   "lang": "en",
+   "expect": {
+    "type": "show_family",
+    "family": "microwave"
+   }
+  },
+  {
+   "text": "plastic cutlery",
+   "lang": "en",
+   "expect": {
+    "type": "show_family",
+    "family": "cutlery"
+   }
+  },
+  {
+   "text": "do you sell spoons?",
+   "lang": "en",
+   "expect": {
+    "type": "show_family",
+    "family": "cutlery"
+   }
+  },
+  {
+   "text": "cling film",
+   "lang": "en",
+   "expect": {
+    "type": "show_family",
+    "family": "cling-film"
+   }
+  },
+  {
+   "text": "food wrap",
+   "lang": "en",
+   "expect": {
+    "type": "show_family",
+    "family": "cling-film"
+   }
+  },
+  {
+   "text": "takeaway containers",
+   "lang": "en",
+   "expect": {
+    "type": "show_family",
+    "family": "containers"
+   }
+  },
+  {
+   "text": "show me trays",
+   "lang": "en",
+   "expect": {
+    "type": "show_family",
+    "family": "cups-trays"
+   }
+  },
+  {
+   "text": "round pots",
+   "lang": "en",
+   "expect": {
+    "type": "show_family",
+    "family": "pots"
+   }
+  },
+  {
+   "text": "8325",
+   "lang": "en",
+   "expect": {
+    "type": "show_product",
+    "product_id": "ac-8325"
+   }
+  },
+  {
+   "text": "show me 8325",
+   "lang": "en",
+   "expect": {
+    "type": "show_product",
+    "product_id": "ac-8325"
+   }
+  },
+  {
+   "text": "AC-1",
+   "lang": "en",
+   "expect": {
+    "type": "show_product",
+    "product_id": "ac-8325"
+   }
+  },
+  {
+   "text": "I want product 8342",
+   "lang": "en",
+   "expect": {
+    "type": "show_family",
+    "family": "containers"
+   }
+  },
+  {
+   "text": "8342 retail pack",
+   "lang": "en",
+   "expect": {
+    "type": "show_product",
+    "product_id": "sr-con-8342"
+   }
+  },
+  {
+   "text": "the 6550 platter",
+   "lang": "en",
+   "expect": {
+    "type": "show_family",
+    "family": "platters"
+   }
+  },
+  {
+   "text": "tray 3180",
+   "lang": "en",
+   "expect": {
+    "type": "show_product",
+    "product_id": "tray-3180"
+   }
+  },
+  {
+   "text": "do you have the 14082 cup?",
+   "lang": "en",
+   "expect": {
+    "type": "show_product",
+    "product_id": "cup-14082"
+   }
+  },
+  {
+   "text": "5186",
+   "lang": "en",
+   "expect": {
+    "type": "show_product",
+    "product_id": "tray-5186"
+   }
+  },
+  {
+   "text": "where are your certificates?",
+   "lang": "en",
+   "expect": {
+    "type": "navigate",
+    "page": "quality",
+    "section": "documents"
+   }
+  },
+  {
+   "text": "take me to contact",
+   "lang": "en",
+   "expect": {
+    "type": "navigate",
+    "page": "contact"
+   }
+  },
+  {
+   "text": "show me your clients",
+   "lang": "en",
+   "expect": {
+    "type": "navigate",
+    "page": "clients",
+    "section": "clients"
+   }
+  },
+  {
+   "text": "about the company",
+   "lang": "en",
+   "expect": {
+    "type": "navigate",
+    "page": "about",
+    "section": "top"
+   }
+  },
+  {
+   "text": "how do I find you?",
+   "lang": "en",
+   "expect": {
+    "type": "navigate",
+    "page": "contact",
+    "section": "where"
+   }
+  },
+  {
+   "text": "open the enquiry form",
+   "lang": "en",
+   "expect": {
+    "type": "navigate",
+    "page": "contact",
+    "section": "enquiry"
+   }
+  },
+  {
+   "text": "show me the factory film",
+   "lang": "en",
+   "expect": {
+    "type": "factory_tour"
+   }
+  },
+  {
+   "text": "factory tour",
+   "lang": "en",
+   "expect": {
+    "type": "factory_tour"
+   }
+  },
+  {
+   "text": "show me the quality page",
+   "lang": "en",
+   "expect": {
+    "type": "navigate",
+    "page": "quality",
+    "section": "top"
+   }
+  },
+  {
+   "text": "go to products",
+   "lang": "en",
+   "expect": {
+    "type": "navigate",
+    "page": "products"
+   }
+  },
+  {
+   "text": "go home",
+   "lang": "en",
+   "expect": {
+    "type": "navigate",
+    "page": "home",
+    "section": "top"
+   }
+  },
+  {
+   "text": "hello",
+   "lang": "en",
+   "expect": null
+  },
+  {
+   "text": "thanks a lot",
+   "lang": "en",
+   "expect": null
+  },
+  {
+   "text": "my email is buyer@example.com",
+   "lang": "en",
+   "expect": null
+  },
+  {
+   "text": "call me on +971 50 123 4567",
+   "lang": "en",
+   "expect": null
+  },
+  {
+   "text": "we need 20,000 pieces every month",
+   "lang": "en",
+   "expect": null
+  },
+  {
+   "text": "can you deliver to Oman?",
+   "lang": "en",
+   "expect": null
+  },
+  {
+   "text": "what is the price of 8325?",
+   "lang": "en",
+   "expect": {
+    "type": "show_product",
+    "product_id": "ac-8325"
+   }
+  },
+  {
+   "text": "what is your production capacity per month?",
+   "lang": "en",
+   "expect": null
+  },
+  {
+   "text": "are your containers oven safe?",
+   "lang": "en",
+   "expect": {
+    "type": "show_family",
+    "family": "containers"
+   }
+  },
+  {
+   "text": "أرني حاويات ألمنيوم",
+   "lang": "ar",
+   "expect": {
+    "type": "show_family",
+    "family": "containers"
+   }
+  },
+  {
+   "text": "ورق ألمنيوم",
+   "lang": "ar",
+   "expect": {
+    "type": "show_family",
+    "family": "foil"
+   }
+  },
+  {
+   "text": "ورق القصدير",
+   "lang": "ar",
+   "expect": {
+    "type": "show_family",
+    "family": "foil"
+   }
+  },
+  {
+   "text": "صواني تقديم",
+   "lang": "ar",
+   "expect": {
+    "type": "show_family",
+    "family": "platters"
+   }
+  },
+  {
+   "text": "قدور ألمنيوم",
+   "lang": "ar",
+   "expect": {
+    "type": "show_family",
+    "family": "pots"
+   }
+  },
+  {
+   "text": "ملاعق",
+   "lang": "ar",
+   "expect": {
+    "type": "show_family",
+    "family": "cutlery"
+   }
+  },
+  {
+   "text": "نايلون تغليف",
+   "lang": "ar",
+   "expect": {
+    "type": "show_family",
+    "family": "cling-film"
+   }
+  },
+  {
+   "text": "أريد المنتج 8325",
+   "lang": "ar",
+   "expect": {
+    "type": "show_product",
+    "product_id": "ac-8325"
+   }
+  },
+  {
+   "text": "أين الشهادات؟",
+   "lang": "ar",
+   "expect": {
+    "type": "navigate",
+    "page": "quality",
+    "section": "documents"
+   }
+  },
+  {
+   "text": "تواصل معنا",
+   "lang": "ar",
+   "expect": {
+    "type": "navigate",
+    "page": "contact"
+   }
+  },
+  {
+   "text": "مرحبا",
+   "lang": "ar",
+   "expect": null
+  },
+  {
+   "text": "شكرا لكم",
+   "lang": "ar",
+   "expect": null
+  },
+  {
+   "text": "كم سعر 8325؟",
+   "lang": "ar",
+   "expect": {
+    "type": "show_product",
+    "product_id": "ac-8325"
+   }
+  },
+  {
+   "text": "هل عندكم توصيل إلى عمان؟",
+   "lang": "ar",
+   "expect": null
+  },
+  {
+   "text": "मुझे फॉयल दिखाओ",
+   "lang": "hi",
+   "expect": null
+  },
+  {
+   "text": "அலுமினிய கொள்கலன்கள்",
+   "lang": "ta",
+   "expect": null
+  },
+  {
+   "text": "给我看铝箔",
+   "lang": "zh",
+   "expect": null
+  },
+  {
+   "text": "ෆොයිල් පෙන්වන්න",
+   "lang": "si",
+   "expect": null
+  },
+  {
+   "text": "kitchen foil",
+   "lang": "en",
+   "context": {
+    "page": "products",
+    "path": "/products?family=foil",
+    "family": "foil"
+   },
+   "expect": null
+  },
+  {
+   "text": "8342",
+   "lang": "en",
+   "context": {
+    "page": "products",
+    "path": "/products?family=containers",
+    "family": "containers"
+   },
+   "expect": {
+    "type": "show_family",
+    "family": "containers"
+   }
+  }
+ ]
+}

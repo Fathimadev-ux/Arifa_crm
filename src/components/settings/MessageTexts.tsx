@@ -64,6 +64,7 @@ function TextHistory({ textKey }: { textKey: string }) {
 
 /** One text opened: edit the English (placeholders must stay), go back to the built-in wording, or read its history. */
 function TextEditor({ text, canEdit, onClose }: { text: TextOut; canEdit: boolean; onClose: () => void }) {
+  const { nameOf } = useStaffNames();
   const [draft, setDraft] = useState(text.en);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const used = placeholdersIn(draft);
@@ -116,6 +117,12 @@ function TextEditor({ text, canEdit, onClose }: { text: TextOut; canEdit: boolea
         </Button>
       </div>
       {isEdited && <p className="text-xs text-neutral-500">Built-in: {text.builtin_en}</p>}
+      {text.updated_at && (
+        <p className="text-xs text-neutral-400">
+          Last changed {formatDateTime(text.updated_at)}
+          {text.updated_by && ` by ${nameOf(text.updated_by)}`}
+        </p>
+      )}
       {isHistoryOpen && <TextHistory textKey={text.key} />}
     </div>
   );

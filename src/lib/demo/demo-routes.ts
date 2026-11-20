@@ -62,15 +62,35 @@ function revise(deal: DealDetail, previousId: string | null, edits: Body, summar
   return json(version, 201);
 }
 
+/** The deals board's server filters, applied to the sample deals (value = the newest quote's total in AED). */
+function matchesDealQuery(deal: DealDetail, query: URLSearchParams) {
+  const requirement = deal.requirements[0];
+  const valueAed = Number(getState().quotes[deal.id]?.[0]?.total_aed ?? 0);
+  const checks: [string, () => boolean][] = [
+    ["stage", () => deal.stage === query.get("stage")],
+    ["owner_user_id", () => deal.owner_user_id === query.get("owner_user_id")],
+    ["country", () => requirement?.delivery_country === query.get("country")],
+    ["product_id", () => requirement?.product_id === query.get("product_id")],
+    ["min_value_aed", () => valueAed >= Number(query.get("min_value_aed"))],
+    ["max_value_aed", () => valueAed <= Number(query.get("max_value_aed"))],
+    ["opted_out", () => Boolean(deal.opted_out_at) === (query.get("opted_out") === "true")],
+    ["unassigned", () => (deal.owner_user_id === null) === (query.get("unassigned") === "true")],
+    // Escalated in the sample: an open change request past its deadline.
+    ["escalated", () => getState().changeRequests.some((request) => request.deal_id === deal.id && request.escalated_at !== null) === (query.get("escalated") === "true")],
+  ];
+  return checks.every(([name, check]) => !query.has(name) || check());
+}
+
 const AUTH_ROUTES: [string, RegExp, Handler][] = [
   ["POST", /^\/v1\/auth\/login$/, (_, body) => {
     loggingInUser = demoUserForEmail(String(body.email ?? ""));
     return json({ challenge_token: "demo-challenge-token", methods: ["totp", "email"], totp_enrolled: true, expires_at: new Date(Date.now() + 5 * 60_000).toISOString() });
   }],
-  ["POST", /^\/v1\/auth\/mfa\/(totp|email\/verify)$/, () => {
+  ["POST", /^\/v1\/auth\/mfa\/(totp|email\/verify)$/, ([method]) => {
     const user = loggingInUser ?? demoUserForEmail("");
     setCurrentUser(user);
-    return json(tokens(user));
+    // An emailed code signs in without approvals (mfa false), as on the real backend.
+    return json(tokens(user, method === "totp"));
   }],
   ["POST", /^\/v1\/auth\/mfa\/email\/send$/, () => empty()],
   ["POST", /^\/v1\/auth\/refresh$/, () => {
@@ -88,8 +108,13 @@ const AUTH_ROUTES: [string, RegExp, Handler][] = [
 
 const DEAL_ROUTES: [string, RegExp, Handler][] = [
   ["GET", /^\/v1\/inbox$/, () => json(inboxItems())],
-  ["GET", /^\/v1\/approvals$/, () => json({ items: getState().approvals.filter((approval) => approval.status === "open" && canSee(dealOfApproval(approval))), next_cursor: null })],
-  ["GET", /^\/v1\/deals$/, () => json({ items: getState().deals.filter(canSee).map(summaryOf), next_cursor: null })],
+  ["GET", /^\/v1\/approvals$/, (_, __, query) => {
+    // status=open (the default) or decided (approved, rejected, corrected), newest decision first.
+    const wantsDecided = query.get("status") === "decided";
+    const items = getState().approvals.filter((approval) => (wantsDecided ? approval.decided_at !== null : approval.status === "open") && canSee(dealOfApproval(approval)));
+    return json({ items: wantsDecided ? items.sort((a, b) => (b.decided_at ?? "").localeCompare(a.decided_at ?? "")) : items, next_cursor: null });
+  }],
+  ["GET", /^\/v1\/deals$/, (_, __, query) => json({ items: getState().deals.filter(canSee).filter((deal) => matchesDealQuery(deal, query)).map(summaryOf), next_cursor: null })],
   ["GET", /^\/v1\/deals\/([^/]+)$/, withDeal((deal) => json(deal))],
   ["GET", /^\/v1\/deals\/([^/]+)\/timeline$/, withDeal((deal) => json({ items: getState().timeline[deal.id], next_cursor: null }))],
   ["GET", /^\/v1\/deals\/([^/]+)\/quotes$/, withDeal((deal) => json(getState().quotes[deal.id]))],
@@ -225,9 +250,10 @@ const BUYER_ROUTES: [string, RegExp, Handler][] = [
     const order = getState().orders.find((item) => item.id === id);
     if (!order) return problem(404, "Order not found");
     const status = String(body.status);
-    const today = nowIso().slice(0, 10);
+    // on_date: the day it happened (empty = today).
+    const onDate = (body.on_date as string) || nowIso().slice(0, 10);
     const dateField = ({ ready: "ready_on", shipped: "shipped_on", delivered: "delivered_on" } as Record<string, string>)[status];
-    Object.assign(order, { status, tracking_ref: (body.tracking_ref as string) || order.tracking_ref }, dateField ? { [dateField]: today } : {});
+    Object.assign(order, { status, tracking_ref: (body.tracking_ref as string) || order.tracking_ref }, dateField ? { [dateField]: onDate } : {});
     const deal = dealById(order.deal_id);
     if (deal) changeDeal(deal, {}, `Order ${order.number}: ${status}`);
     return json({ ...order, final_quote_version_id: (deal && getState().quotes[deal.id][0]?.id) ?? order.id });

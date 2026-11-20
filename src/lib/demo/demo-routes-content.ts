@@ -1,5 +1,7 @@
 /** Sample answers for the 18 Nov endpoints: company details (§5.3), message texts (§5.2) and the product workbook (§5.1). */
-import type { CompanyFields, TextChangeOut, TextOut, WorkbookPreview } from "@/lib/api/schema-additions";
+import type { WorkbookPreview } from "@/lib/api/catalogue";
+import type { CompanyFields } from "@/lib/api/company";
+import type { TextChangeOut, TextOut } from "@/lib/api/texts";
 import { getRecords } from "./demo-records";
 import type { Handler } from "./demo-routes";
 import { type Body, currentUser, json, nowIso, problem } from "./demo-store";
@@ -166,7 +168,40 @@ function applyWorkbook(query: URLSearchParams) {
   return json({ products_created: 1, products_updated: 1, price_lists_changed: 1, categories_changed: 0, website_drafts: 2 });
 }
 
+// ---------- ERP list and website links (D61) ----------
+
+/** The sample check reads no cells: it answers like a typical ERP list (one new item, packing marked not sellable). */
+function erpImport(query: URLSearchParams) {
+  const saved = query.get("dry_run") !== "true";
+  return json({ rows: 42, created: 1, updated: 35, sellable: 30, not_sellable: 12, linked_to_website: 29, ambiguous_links: 1, errors: [], saved });
+}
+
+/** A website product's sellable variants: the products linked to it, described without amounts. */
+function websiteVariants(cmsProductId: string) {
+  const { products, stock, tiers } = getRecords();
+  return json(
+    products
+      .filter((product) => product.cms_product_id === cmsProductId && product.is_active)
+      .map((product) => {
+        const onHand = Number(stock.find((item) => item.product_id === product.id)?.quantity ?? 0);
+        return {
+          sku: product.sku, description: product.name, packing: product.carton_qty ? `${product.carton_qty} per carton` : null, unit: product.unit,
+          availability: onHand > (product.moq ?? 0) ? "in_stock" : onHand > 0 ? "limited" : "made_to_order", moq: product.moq,
+          quantity_breaks: tiers.filter((tier) => tier.product_id === product.id).map((tier) => String(tier.min_qty)), quotable: product.is_quotable,
+        };
+      }),
+  );
+}
+
 export const CONTENT_ROUTES: [string, RegExp, Handler][] = [
+  ["POST", /^\/v1\/catalogue\/erp-import$/, (_, __, query) => erpImport(query)],
+  ["PUT", /^\/v1\/catalogue\/products\/([^/]+)\/website-link$/, ([sku], body) => {
+    const product = getRecords().products.find((item) => item.sku === decodeURIComponent(sku));
+    if (!product) return problem(404, "Product not found");
+    product.cms_product_id = (body.cms_product_id as string | null) ?? null;
+    return new Response(null, { status: 204 });
+  }],
+  ["GET", /^\/v1\/catalogue\/website-products\/([^/]+)\/variants$/, ([id]) => websiteVariants(decodeURIComponent(id))],
   ["GET", /^\/v1\/company$/, () => json(companyOut())],
   ["PATCH", /^\/v1\/company$/, (_, body) => patchCompany(body)],
   ["PUT", /^\/v1\/company\/logo$/, () => ((company.hasLogo = true), json(companyOut()))],
