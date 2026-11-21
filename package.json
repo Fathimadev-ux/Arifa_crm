@@ -8,23 +8,15 @@
     "build": "next build",
     "start": "next start -p 3300",
     "lint": "eslint",
-    "payload": "payload",
-    "generate:types": "payload generate:types",
-    "generate:importmap": "payload generate:importmap"
+    "api:types": "openapi-typescript docs/api/openapi-cms.json -o src/lib/api/schema-cms.d.ts && openapi-typescript docs/api/openapi-crm.json -o src/lib/api/schema-auth.d.ts"
   },
   "dependencies": {
-    "@payloadcms/db-sqlite": "^3.93.0",
-    "@payloadcms/next": "^3.93.0",
-    "@payloadcms/richtext-lexical": "^3.93.0",
-    "@payloadcms/ui": "^3.93.0",
-    "graphql": "^16.15.0",
     "lucide-react": "^1.69.0",
     "motion": "^14.9.1",
     "next": "16.4.5",
-    "payload": "^3.93.0",
+    "openapi-fetch": "^0.17.0",
     "react": "19.3.0",
-    "react-dom": "19.3.0",
-    "sharp": "^0.35.5"
+    "react-dom": "19.3.0"
   },
   "devDependencies": {
     "@tailwindcss/turbopack": "^4",
@@ -33,6 +25,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.4.5",
+    "openapi-typescript": "^7.13.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

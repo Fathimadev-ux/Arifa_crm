@@ -12,10 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
-    // Written by Payload (migrate:create, generate:types, generate:importmap).
-    "src/migrations/**",
-    "src/payload-types.ts",
-    "src/app/(payload)/admin/importMap.js",
+    // Generated from the team's OpenAPI files (npm run api:types).
+    "src/lib/api/schema-*.d.ts",
   ]),
 ]);
 

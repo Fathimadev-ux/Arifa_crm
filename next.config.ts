@@ -1,15 +1,14 @@
-import { withPayload } from "@payloadcms/next/withPayload";
 import type { NextConfig } from "next";
 
+/** The backend (FastAPI, kx.cms). Set API_URL locally in .env.local and on Vercel; if nothing answers, the CMS shows sample content. */
+const API_URL = process.env.API_URL ?? "http://localhost:8000";
+
 const nextConfig: NextConfig = {
-  images: {
-    // Uploaded media (Payload) and the site's own images.
-    localPatterns: [{ pathname: "/api/media/file/**" }, { pathname: "/images/**" }],
-  },
+  // The browser only talks to this site; /v1 is forwarded to the backend, so the login cookie stays first-party.
+  rewrites: async () => [{ source: "/v1/:path*", destination: `${API_URL}/v1/:path*` }],
   turbopack: {
     rules: {
-      // Tailwind only for the website's stylesheet; the Payload admin keeps its own CSS untouched.
-      "*.tw.css": {
+      "*.css": {
         loaders: ["@tailwindcss/turbopack"],
         as: "*.css",
       },
@@ -17,4 +16,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withPayload(nextConfig, { devBundleServerPackages: false });
+export default nextConfig;

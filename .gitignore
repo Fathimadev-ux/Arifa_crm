@@ -40,6 +40,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# Payload: the local database and uploaded files
+# The old Payload version's local database and uploads (kept on disk, never committed)
 /cms.db*
 /media
