@@ -172,10 +172,7 @@ export function LoginScreen() {
         {step.name === "CODE" && (
           <form onSubmit={handleCode(step.challenge, step.method)} className="mt-8 space-y-4">
             <p className="text-center text-sm text-neutral-500">{step.method === "totp" ? "Enter the code from your authenticator app." : "Enter the code from your email."}</p>
-            <p className="text-center text-xs text-neutral-400">
-              Valid until {new Date(step.challenge.expires_at).toLocaleTimeString("en-AE", { hour: "numeric", minute: "2-digit" })}
-              {step.method === "email" && " · an emailed code can’t approve quotes"}
-            </p>
+            {step.method === "email" && <p className="text-center text-xs text-neutral-400">An emailed code can’t approve quotes</p>}
             {codeField}
             {message && <p className="text-sm font-medium">{message}</p>}
             <SubmitButton isBusy={isBusy}>Log in</SubmitButton>
