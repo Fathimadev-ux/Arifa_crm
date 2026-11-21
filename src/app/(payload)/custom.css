@@ -1,0 +1,846 @@
+/*
+ * The CRM's design system, applied to the Payload admin (same values as crm/src/app/globals.css):
+ * a studio backdrop with lit white shapes, frosted glass panels, black and outlined pills, and one motion style.
+ *
+ * Hover, the same everywhere:  cards lift · buttons and pills grow, then press · text nudges right ·
+ * rows and fields brighten · the open page is black.  Content fades up as a screen opens.
+ * Payload's own forms keep working as they are; this file only styles them.
+ */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap");
+
+:root {
+  --font-body: "Inter", system-ui, sans-serif;
+  --style-radius-s: 14px;
+  --style-radius-m: 20px;
+  --style-radius-l: 28px;
+  --arifa-bg: #e4e4e4;
+  --arifa-fg: #0a0a0a;
+  --arifa-muted: #737373;
+  --arifa-nav-width: 248px;
+  --arifa-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  /* The CRM `panel`: see-through white, blurred backdrop, a thin light edge. */
+  --arifa-panel-bg: linear-gradient(145deg, rgb(255 255 255 / 0.62), rgb(255 255 255 / 0.34));
+  --arifa-panel-shadow: inset 0 1px 0 rgb(255 255 255 / 0.9), 0 1px 2px rgb(0 0 0 / 0.04), 0 16px 40px -18px rgb(0 0 0 / 0.18);
+  --arifa-lift-shadow: inset 0 1px 0 rgb(255 255 255 / 0.9), 0 1px 2px rgb(0 0 0 / 0.04), 0 24px 48px -20px rgb(0 0 0 / 0.25);
+}
+
+html[data-theme="light"] {
+  --theme-success-500: #000000;
+  --theme-text: var(--arifa-fg);
+}
+
+/* ========== Backdrop (components/admin/Backdrop) ========== */
+/* The page itself stays clear, so the fixed backdrop layer (light, shadows and shapes) shows behind the glass. */
+html[data-theme="light"] {
+  background: var(--arifa-bg);
+}
+
+html[data-theme="light"] body {
+  color: var(--arifa-fg);
+  background: transparent;
+  min-height: 100vh;
+}
+
+.arifa-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  background-color: var(--arifa-bg);
+  background-image:
+    radial-gradient(40% 50% at 10% 5%, #ffffff 0%, transparent 70%),
+    radial-gradient(35% 45% at 70% 60%, #f4f4f4 0%, transparent 70%),
+    radial-gradient(30% 40% at 30% 90%, #c2c2c2 0%, transparent 70%);
+}
+
+.arifa-backdrop span {
+  position: absolute;
+  border-radius: 9999px;
+}
+
+/* A lit white sphere and a lit capsule, each with a long soft shadow. */
+.arifa-sphere {
+  background: radial-gradient(circle at 32% 28%, #ffffff 0%, #f3f3f3 20%, #d2d2d2 55%, #9a9a9a 100%);
+  box-shadow: 0 60px 120px -30px rgb(0 0 0 / 0.35);
+}
+
+.arifa-capsule {
+  background: linear-gradient(160deg, #ffffff 0%, #e2e2e2 45%, #a8a8a8 100%);
+  box-shadow: 0 50px 100px -30px rgb(0 0 0 / 0.3);
+}
+
+.arifa-shape--1 { top: -10rem; right: -8rem; width: 34rem; height: 34rem; }
+.arifa-shape--2 { bottom: -12rem; left: 8%; width: 28rem; height: 28rem; }
+.arifa-shape--3 { top: 38%; left: 46%; width: 11rem; height: 11rem; }
+.arifa-shape--4 { top: 30%; left: -10rem; width: 38rem; height: 14rem; rotate: -24deg; }
+.arifa-shape--5 { right: -6rem; bottom: 12%; width: 26rem; height: 10rem; rotate: 32deg; }
+
+html[data-theme="light"] :is(.template-default, .template-default__wrap, .app-header__bg, .template-minimal, .doc-header, .list-header) {
+  background: transparent;
+}
+
+/* ========== Glass ========== */
+.arifa-card,
+html[data-theme="light"] :is(.card, .collapsible, .table, .template-minimal__wrap, .file-details, .upload__dropzone) {
+  background: var(--arifa-panel-bg);
+  backdrop-filter: blur(28px) saturate(160%);
+  -webkit-backdrop-filter: blur(28px) saturate(160%);
+  border: 1px solid rgb(255 255 255 / 0.7);
+  box-shadow: var(--arifa-panel-shadow);
+}
+
+/* Small frosted surfaces: popups and drawers read better a little more solid. */
+html[data-theme="light"] :is(.popup__content, .drawer__content, .rs__menu) {
+  background: rgb(255 255 255 / 0.9);
+  backdrop-filter: blur(24px) saturate(160%);
+  border: 1px solid rgb(255 255 255 / 0.85);
+  border-radius: var(--style-radius-m);
+  box-shadow: 0 24px 48px -20px rgb(0 0 0 / 0.3);
+}
+
+/* ========== Motion: one style for every element ========== */
+
+/* Lift: cards and panels rise with a deeper shadow (mouse only; a gentle press on touch). */
+.arifa-dash__stat,
+.arifa-dash__recent,
+html[data-theme="light"] :is(.card, .collapsible, .table, .file-details) {
+  transition: translate 0.45s var(--arifa-ease), box-shadow 0.45s var(--arifa-ease), background-color 0.45s var(--arifa-ease);
+}
+
+@media (hover: hover) {
+  .arifa-dash__stat:hover,
+  .arifa-dash__recent:hover,
+  html[data-theme="light"] :is(.card, .collapsible, .file-details):hover {
+    translate: 0 -3px;
+    box-shadow: var(--arifa-lift-shadow);
+  }
+}
+
+@media (hover: none) {
+  .arifa-dash__stat:active,
+  html[data-theme="light"] .card:active {
+    scale: 0.985;
+  }
+}
+
+/* Press: buttons, pills and tabs grow a touch on hover and press down on click. */
+.arifa-pill,
+.arifa-nav__link,
+.arifa-nav__logout,
+html[data-theme="light"] :is(.btn, .pill, .popup-button, .doc-tab, .tabs-field__tab-button, .clickable-arrow, .array-actions__button, .collapsible__toggle) {
+  transition: scale 0.3s var(--arifa-ease), background-color 0.35s var(--arifa-ease), color 0.35s var(--arifa-ease), box-shadow 0.35s var(--arifa-ease), border-color 0.35s var(--arifa-ease);
+}
+
+@media (hover: hover) {
+  .arifa-pill:hover,
+  .arifa-nav__logout:hover,
+  html[data-theme="light"] :is(.btn, .pill, .popup-button, .doc-tab, .tabs-field__tab-button, .clickable-arrow):hover:not(:disabled) {
+    scale: 1.04;
+  }
+}
+
+.arifa-pill:active,
+.arifa-nav__link:active,
+.arifa-nav__logout:active,
+html[data-theme="light"] :is(.btn, .pill, .popup-button, .doc-tab, .tabs-field__tab-button, .clickable-arrow):active:not(:disabled) {
+  scale: 0.96;
+}
+
+/* Text: headings, labels and values nudge right and darken; big titles tighten. */
+html[data-theme="light"] :is(.arifa-dash, .template-default__wrap) :is(h2, h3, .field-label, .field-description, .arifa-dash__stat-label, .arifa-dash__recent-title, .doc-header__title, .list-header h1, .collections__label, .cell-title) {
+  transition: translate 0.4s var(--arifa-ease), color 0.4s var(--arifa-ease), letter-spacing 0.5s var(--arifa-ease);
+}
+
+@media (hover: hover) {
+  html[data-theme="light"] .template-default__wrap :is(h2, h3, .field-label, .field-description, .arifa-dash__stat-label):hover {
+    translate: 3px 0;
+    color: var(--arifa-fg);
+  }
+
+  html[data-theme="light"] .template-default__wrap :is(.arifa-dash__header h1, .doc-header__title, .list-header h1):hover {
+    letter-spacing: -0.045em;
+  }
+}
+
+/* Entrance: content fades up as a screen opens, one piece after another. */
+@keyframes arifa-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+.arifa-enter,
+html[data-theme="light"] :is(.doc-header, .list-header, .table, .doc-controls, .collections__group, .template-minimal__wrap),
+html[data-theme="light"] .render-fields > * {
+  animation: arifa-enter 0.7s var(--arifa-ease) both;
+  animation-delay: calc(var(--enter-index, 0) * 60ms);
+}
+
+html[data-theme="light"] .list-header { --enter-index: 1; }
+html[data-theme="light"] .doc-controls { --enter-index: 1; }
+html[data-theme="light"] .table { --enter-index: 2; }
+html[data-theme="light"] .render-fields > :nth-child(1) { --enter-index: 2; }
+html[data-theme="light"] .render-fields > :nth-child(2) { --enter-index: 3; }
+html[data-theme="light"] .render-fields > :nth-child(3) { --enter-index: 4; }
+html[data-theme="light"] .render-fields > :nth-child(4) { --enter-index: 5; }
+html[data-theme="light"] .render-fields > :nth-child(5) { --enter-index: 6; }
+html[data-theme="light"] .render-fields > :nth-child(n + 6) { --enter-index: 7; }
+
+/* A clear black ring for keyboard users, never for mouse clicks. */
+html[data-theme="light"] :focus-visible {
+  outline: 2px solid var(--arifa-fg);
+  outline-offset: 2px;
+}
+
+/* ========== Side menu (components/admin/AdminNav) ========== */
+.arifa-nav {
+  position: sticky;
+  top: 16px;
+  z-index: var(--z-nav);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  height: calc(100vh - 32px);
+  margin: 16px 0 16px 16px;
+  padding: 24px 16px 16px;
+  border-radius: var(--style-radius-l);
+  background: var(--arifa-panel-bg);
+  backdrop-filter: blur(28px) saturate(160%);
+  -webkit-backdrop-filter: blur(28px) saturate(160%);
+  border: 1px solid rgb(255 255 255 / 0.7);
+  box-shadow: var(--arifa-panel-shadow);
+  overflow: hidden;
+  animation: arifa-enter 0.7s var(--arifa-ease) both;
+}
+
+.arifa-nav__brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 10px;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--arifa-fg);
+  text-decoration: none;
+}
+
+.arifa-nav__mark,
+.arifa-nav__avatar,
+.arifa-avatar,
+.arifa-dash__stat-icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  border-radius: 9999px;
+}
+
+.arifa-nav__mark,
+.arifa-nav__avatar,
+.arifa-avatar {
+  background: #000;
+  color: #fff;
+  font-weight: 600;
+}
+
+.arifa-nav__mark {
+  width: 32px;
+  height: 32px;
+  font-size: 14px;
+  transition: rotate 0.6s var(--arifa-ease);
+}
+
+.arifa-nav__brand:hover .arifa-nav__mark {
+  rotate: 360deg;
+}
+
+/* Only the links scroll (on short screens); the brand and the person stay in place. */
+.arifa-nav__links {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  gap: 1px;
+  margin-inline: -4px;
+  padding-inline: 4px;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.arifa-nav__group {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin-top: 14px;
+}
+
+.arifa-nav__group-label {
+  margin: 0 0 4px;
+  padding: 0 16px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #a3a3a3;
+}
+
+.arifa-nav__link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+  padding: 9px 16px;
+  border-radius: 9999px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--arifa-muted);
+  text-decoration: none;
+}
+
+.arifa-nav__link svg {
+  transition: rotate 0.45s var(--arifa-ease), scale 0.45s var(--arifa-ease);
+}
+
+@media (hover: hover) {
+  .arifa-nav__link:hover {
+    background: rgb(255 255 255 / 0.7);
+    color: var(--arifa-fg);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.9), 0 6px 16px -10px rgb(0 0 0 / 0.25);
+  }
+
+  .arifa-nav__link:hover svg {
+    rotate: -8deg;
+    scale: 1.1;
+  }
+}
+
+.arifa-nav__link--active,
+.arifa-nav__link--active:hover {
+  background: #000;
+  color: #fff;
+  box-shadow: 0 8px 20px -10px rgb(0 0 0 / 0.6);
+}
+
+.arifa-nav__person {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-top: 14px;
+  border-top: 1px dashed rgb(0 0 0 / 0.12);
+}
+
+.arifa-nav__account {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+  padding: 6px;
+  border-radius: 9999px;
+  color: var(--arifa-fg);
+  text-decoration: none;
+  transition: background-color 0.35s var(--arifa-ease);
+}
+
+.arifa-nav__account:hover,
+.arifa-nav__logout:hover {
+  background: rgb(255 255 255 / 0.7);
+}
+
+.arifa-nav__avatar {
+  width: 38px;
+  height: 38px;
+  font-size: 13px;
+  transition: scale 0.35s var(--arifa-ease);
+}
+
+.arifa-nav__account:hover .arifa-nav__avatar {
+  scale: 1.08;
+}
+
+.arifa-nav__who {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.arifa-nav__name {
+  overflow: hidden;
+  font-size: 13.5px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.arifa-nav__role {
+  font-size: 12px;
+  color: var(--arifa-muted);
+}
+
+.arifa-nav__logout {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  border-radius: 9999px;
+  color: var(--arifa-muted);
+}
+
+.arifa-nav__overlay {
+  display: none;
+}
+
+/* Computers: the menu is always there, like the CRM sidebar; Payload's ☰ button isn't needed. */
+@media (min-width: 1025px) {
+  html[data-theme="light"] .template-default {
+    grid-template-columns: calc(var(--arifa-nav-width) + 16px) minmax(0, 1fr) !important;
+  }
+
+  html[data-theme="light"] .template-default__nav-toggler-wrapper {
+    display: none;
+  }
+}
+
+/* Phones and tablets: a drawer opened with Payload's ☰ button. It floats above the page, so the page has one column. */
+@media (max-width: 1024px) {
+  html[data-theme="light"] .template-default {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .arifa-nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    /* Above Payload's ☰ button and header; nearly solid so the page behind doesn't show through. */
+    z-index: calc(var(--z-modal) + 10);
+    width: min(var(--arifa-nav-width), 85vw);
+    height: calc(100vh - 32px);
+    background: rgb(255 255 255 / 0.94);
+    translate: -110% 0;
+    transition: translate 0.45s var(--arifa-ease);
+    animation: none;
+  }
+
+  .arifa-nav--open {
+    translate: 0 0;
+  }
+
+  .arifa-nav__overlay {
+    position: fixed;
+    inset: 0;
+    z-index: calc(var(--z-modal) + 5);
+    display: block;
+    border: 0;
+    background: rgb(0 0 0 / 0.2);
+    backdrop-filter: blur(2px);
+  }
+}
+
+/* Header avatar (components/admin/Avatar). */
+.arifa-avatar {
+  width: 36px;
+  height: 36px;
+  font-size: 12px;
+  box-shadow: 0 0 0 2px #fff;
+  transition: scale 0.35s var(--arifa-ease);
+}
+
+.arifa-avatar:hover {
+  scale: 1.1;
+}
+
+/* ========== Start page (components/admin/Dashboard) ========== */
+.arifa-dash {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 8px var(--gutter-h) var(--spacing-view-bottom);
+}
+
+.arifa-dash__header h1 {
+  margin: 0;
+  font-size: clamp(36px, 4.4vw, 48px);
+  font-weight: 300;
+  letter-spacing: -0.03em;
+  transition: letter-spacing 0.5s var(--arifa-ease);
+}
+
+.arifa-dash__header p {
+  margin: 8px 0 0;
+  font-size: 14px;
+  color: var(--arifa-muted);
+}
+
+.arifa-dash__stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+/* The CRM StatCard: an icon circle that turns black and tilts on hover, a label, a big number. */
+.arifa-dash__stat {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px;
+  border-radius: var(--style-radius-l);
+  color: var(--arifa-fg);
+  text-decoration: none;
+}
+
+.arifa-dash__stat-icon {
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgb(0 0 0 / 0.12);
+  transition: rotate 0.5s var(--arifa-ease), background-color 0.5s var(--arifa-ease), color 0.5s var(--arifa-ease), border-color 0.5s var(--arifa-ease);
+}
+
+.arifa-dash__stat:hover .arifa-dash__stat-icon {
+  rotate: -8deg;
+  background: #000;
+  color: #fff;
+  border-color: #000;
+}
+
+.arifa-dash__stat-text {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.arifa-dash__stat-label {
+  font-size: 12px;
+  color: var(--arifa-muted);
+}
+
+.arifa-dash__stat-value {
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The one card that needs attention is black, like the CRM's `panel-dark`. */
+.arifa-dash__stat--urgent {
+  background: rgb(10 10 10 / 0.9);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 16px 40px -18px rgb(0 0 0 / 0.5);
+}
+
+.arifa-dash__stat--urgent .arifa-dash__stat-label {
+  color: #a3a3a3;
+}
+
+.arifa-dash__stat--urgent .arifa-dash__stat-icon {
+  background: #fff;
+  color: #000;
+  border-color: #fff;
+}
+
+.arifa-dash__stat--urgent:hover .arifa-dash__stat-icon {
+  background: #fff;
+  color: #000;
+}
+
+.arifa-dash__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.arifa-pill {
+  display: inline-flex;
+  align-items: center;
+  height: 42px;
+  padding: 0 20px;
+  border-radius: 9999px;
+  background: rgb(255 255 255 / 0.5);
+  backdrop-filter: blur(18px) saturate(160%);
+  border: 1px solid rgb(255 255 255 / 0.8);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.9), 0 1px 2px rgb(0 0 0 / 0.05);
+  color: var(--arifa-fg);
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.arifa-pill:hover {
+  background: #fff;
+  box-shadow: inset 0 1px 0 #fff, 0 10px 24px -12px rgb(0 0 0 / 0.3);
+}
+
+.arifa-pill--primary,
+.arifa-pill--primary:hover {
+  background: #000;
+  color: #fff;
+  border-color: #000;
+  box-shadow: 0 10px 24px -12px rgb(0 0 0 / 0.6);
+}
+
+.arifa-pill--primary:hover {
+  background: #262626;
+}
+
+.arifa-dash__recent {
+  padding: 24px;
+  border-radius: var(--style-radius-l);
+}
+
+.arifa-dash__recent h2 {
+  margin: 0 0 12px;
+  font-size: 18px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.arifa-dash__recent ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.arifa-dash__recent li + li {
+  border-top: 1px dashed rgb(0 0 0 / 0.1);
+}
+
+.arifa-dash__recent a {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 12px;
+  border-radius: 9999px;
+  color: var(--arifa-fg);
+  text-decoration: none;
+  transition: background-color 0.35s var(--arifa-ease), translate 0.35s var(--arifa-ease), box-shadow 0.35s var(--arifa-ease);
+}
+
+.arifa-dash__recent a:hover {
+  translate: 4px 0;
+  background: rgb(255 255 255 / 0.75);
+  box-shadow: 0 6px 16px -10px rgb(0 0 0 / 0.25);
+}
+
+.arifa-dash__recent-title {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.arifa-dash__recent-meta {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--arifa-muted);
+}
+
+@media (max-width: 900px) {
+  .arifa-dash__stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .arifa-dash__recent a {
+    flex-direction: column;
+    gap: 2px;
+    border-radius: 18px;
+  }
+}
+
+/* ========== Payload's own screens ========== */
+
+/* Titles: big and light, like the CRM page headers. */
+html[data-theme="light"] :is(.doc-header__title, .list-header h1) {
+  font-size: clamp(32px, 4vw, 44px);
+  font-weight: 300;
+  letter-spacing: -0.03em;
+}
+
+html[data-theme="light"] .collections__label {
+  font-weight: 300;
+  letter-spacing: -0.02em;
+}
+
+/* Breadcrumb and header links. */
+html[data-theme="light"] .step-nav a {
+  color: var(--arifa-muted);
+  transition: color 0.35s var(--arifa-ease);
+}
+
+html[data-theme="light"] .step-nav a:hover {
+  color: var(--arifa-fg);
+}
+
+html[data-theme="light"] .step-nav__home {
+  overflow: visible;
+  min-width: 22px;
+}
+
+/* Cards, sections, blocks and array rows. */
+html[data-theme="light"] .card {
+  border-radius: var(--style-radius-l);
+}
+
+html[data-theme="light"] .collapsible {
+  border-radius: var(--style-radius-m);
+  overflow: hidden;
+}
+
+html[data-theme="light"] :is(.collapsible__toggle-wrap, .collapsible__header) {
+  background: rgb(255 255 255 / 0.45);
+  transition: background-color 0.35s var(--arifa-ease);
+}
+
+html[data-theme="light"] :is(.collapsible__toggle-wrap, .collapsible__header):hover {
+  background: rgb(255 255 255 / 0.8);
+}
+
+/* The save bar: a rounded glass bar inside the page. */
+html[data-theme="light"] .doc-controls {
+  width: auto;
+  margin: 8px var(--gutter-h);
+  border-radius: 9999px;
+  background: var(--arifa-panel-bg);
+  backdrop-filter: blur(28px) saturate(160%);
+  -webkit-backdrop-filter: blur(28px) saturate(160%);
+  border: 1px solid rgb(255 255 255 / 0.7);
+  box-shadow: var(--arifa-panel-shadow);
+}
+
+html[data-theme="light"] .doc-controls__wrapper {
+  padding-inline: 20px;
+}
+
+/* Edit / Versions / API tabs: pills, the open one black. */
+html[data-theme="light"] .doc-tab {
+  border-radius: 9999px;
+}
+
+html[data-theme="light"] .doc-tab--active,
+html[data-theme="light"] .doc-tab[aria-current="page"] {
+  background: #000;
+  color: #fff;
+}
+
+/* Tables: rounded glass; rows brighten on hover, like the CRM's tables. */
+html[data-theme="light"] .table {
+  border-radius: var(--style-radius-l);
+  overflow-x: auto;
+}
+
+html[data-theme="light"] .table :is(th, td) {
+  border-color: rgb(0 0 0 / 0.06);
+}
+
+html[data-theme="light"] .table tbody tr {
+  transition: background-color 0.35s var(--arifa-ease);
+}
+
+html[data-theme="light"] .table tbody tr:hover {
+  background: rgb(255 255 255 / 0.65);
+}
+
+html[data-theme="light"] .table tbody tr:nth-child(odd) td {
+  background: transparent;
+}
+
+/* Buttons: black pills and frosted outlined pills everywhere (Create New, Columns, Filters, Save Draft…). */
+html[data-theme="light"] :is(.btn, .pill) {
+  border-radius: 9999px;
+}
+
+html[data-theme="light"] .btn--style-primary:not(:disabled) {
+  background: #000;
+  color: #fff;
+  box-shadow: 0 10px 24px -12px rgb(0 0 0 / 0.6);
+}
+
+html[data-theme="light"] .btn--style-primary:hover:not(:disabled) {
+  background: #262626;
+}
+
+html[data-theme="light"] :is(.btn--style-secondary, .btn--style-pill, .pill) {
+  background: rgb(255 255 255 / 0.55);
+  backdrop-filter: blur(18px);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.9), inset 0 0 0 1px rgb(0 0 0 / 0.1);
+  color: var(--arifa-fg);
+}
+
+html[data-theme="light"] :is(.btn--style-secondary, .btn--style-pill, .pill):hover:not(:disabled) {
+  background: #fff;
+  box-shadow: inset 0 0 0 1px #000, 0 10px 24px -12px rgb(0 0 0 / 0.3);
+}
+
+html[data-theme="light"] :is(.pill--style-dark, .pill--active) {
+  background: #000;
+  color: #fff;
+  box-shadow: none;
+}
+
+/* Fields: frosted pill inputs that brighten on hover and get a soft black ring on focus. */
+html[data-theme="light"] .field-type :is(input:not([type="checkbox"]):not([type="radio"]), select),
+html[data-theme="light"] :is(.rs__control, .search-filter__input, .search-bar) {
+  border-radius: 9999px;
+  background: rgb(255 255 255 / 0.55);
+  border-color: rgb(255 255 255 / 0.8);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.9), 0 1px 2px rgb(0 0 0 / 0.04);
+  transition: background-color 0.35s var(--arifa-ease), box-shadow 0.35s var(--arifa-ease), border-color 0.35s var(--arifa-ease);
+}
+
+html[data-theme="light"] .field-type textarea {
+  border-radius: var(--style-radius-m);
+  background: rgb(255 255 255 / 0.55);
+  border-color: rgb(255 255 255 / 0.8);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.9), 0 1px 2px rgb(0 0 0 / 0.04);
+  transition: background-color 0.35s var(--arifa-ease), box-shadow 0.35s var(--arifa-ease), border-color 0.35s var(--arifa-ease);
+}
+
+html[data-theme="light"] .field-type :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea):hover,
+html[data-theme="light"] :is(.rs__control, .search-bar):hover {
+  background: rgb(255 255 255 / 0.85);
+}
+
+html[data-theme="light"] .field-type :is(input, textarea, select):focus,
+html[data-theme="light"] .rs__control--is-focused {
+  background: #fff;
+  border-color: #000;
+  box-shadow: 0 0 0 4px rgb(0 0 0 / 0.06), 0 10px 24px -14px rgb(0 0 0 / 0.3);
+}
+
+html[data-theme="light"] .tabs-field__tab-button--active {
+  color: #000;
+  box-shadow: inset 0 -2px 0 #000;
+}
+
+/* ========== Login: the frosted card, centred on the studio backdrop ========== */
+html[data-theme="light"] .template-minimal__wrap {
+  border-radius: var(--style-radius-l);
+  padding: 40px;
+}
+
+html[data-theme="light"] :is(.login__brand, .template-minimal__wrap > *) {
+  background: transparent;
+}
+
+/* ========== Reduced motion: no movement, colours still change ========== */
+@media (prefers-reduced-motion: reduce) {
+  .arifa-enter,
+  .arifa-nav,
+  html[data-theme="light"] :is(.doc-header, .list-header, .table, .doc-controls, .collections__group, .template-minimal__wrap),
+  html[data-theme="light"] .render-fields > * {
+    animation: none;
+  }
+
+  .arifa-dash__stat:hover,
+  .arifa-dash__recent:hover,
+  .arifa-dash__recent a:hover,
+  .arifa-pill:hover,
+  .arifa-nav__link:hover svg,
+  .arifa-dash__stat:hover .arifa-dash__stat-icon,
+  html[data-theme="light"] :is(.card, .collapsible, .file-details, .btn, .pill, .doc-tab, .field-label, h2, h3):hover {
+    translate: none;
+    scale: none;
+    rotate: none;
+  }
+}

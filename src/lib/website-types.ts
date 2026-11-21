@@ -30,6 +30,8 @@ export interface Product extends ListItem {
   rating: number;
   description: string;
   image: ImageSource;
+  /** The page the card opens (the product category). */
+  href?: string;
 }
 
 export interface AboutSection {

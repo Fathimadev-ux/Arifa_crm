@@ -2,7 +2,7 @@
 
 import { ChevronLeft, ChevronRight, Star } from "lucide-react";
 import { useRef } from "react";
-import type { AboutSection, Product } from "@/lib/website-types";
+import type { AboutSection as AboutContent, Product } from "@/lib/website-types";
 import { SiteImage, visibleOnly } from "@/components/site/site-ui";
 
 const MAX_RATING = 5;
@@ -37,7 +37,7 @@ function ProductCarousel({ heading, products }: { heading: string; products: Pro
 
       <div ref={trackRef} className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-5 overflow-x-auto px-4 pb-4 md:mx-0 md:px-0">
         {products.map((product) => (
-          <article key={product.id} className="lift w-64 shrink-0 snap-start rounded-2xl border border-neutral-200 bg-white p-5">
+          <a key={product.id} href={product.href} className="lift block w-64 shrink-0 snap-start rounded-2xl border border-neutral-200 bg-white p-5">
             <div className="relative mb-4 aspect-square overflow-hidden rounded-xl bg-neutral-50">
               <SiteImage src={product.image} alt={product.name} fill sizes="256px" className="object-contain p-4" />
             </div>
@@ -46,21 +46,28 @@ function ProductCarousel({ heading, products }: { heading: string; products: Pro
               <Rating value={product.rating} />
             </div>
             <p className="mt-2 text-sm text-neutral-600">{product.description}</p>
-          </article>
+          </a>
         ))}
       </div>
     </div>
   );
 }
 
-/** Section 2 on arifapack.com: the "Our Products" carousel followed by the company introduction. */
-export function ProductsAbout({ about, products, brandName }: { about: AboutSection; products: Product[]; brandName: string }) {
+/** The "Our Products" carousel: one card per product category, linking to its page. */
+export function ProductsSection({ heading, products }: { heading: string; products: Product[] }) {
   const visibleProducts = visibleOnly(products);
-
+  if (visibleProducts.length === 0) return null;
   return (
-    <section className="mx-auto max-w-6xl px-4 py-20 md:px-6 md:py-28">
-      {visibleProducts.length > 0 && <ProductCarousel heading={about.productsHeading} products={visibleProducts} />}
+    <section className="mx-auto max-w-6xl px-4 pt-20 md:px-6 md:pt-28">
+      <ProductCarousel heading={heading} products={visibleProducts} />
+    </section>
+  );
+}
 
+/** The company introduction. */
+export function AboutSection({ about, brandName }: { about: AboutContent; brandName: string }) {
+  return (
+    <section className="mx-auto max-w-6xl px-4 pb-20 md:px-6 md:pb-28">
       <div id="about" className="grid items-center gap-12 md:grid-cols-2">
         <div>
           <p className="mb-3 text-xs font-semibold tracking-[0.2em] text-neutral-500 uppercase">{about.companyName}</p>

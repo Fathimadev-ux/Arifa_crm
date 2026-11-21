@@ -3,7 +3,6 @@
 import { Building2, Mail, MapPin, Phone } from "lucide-react";
 import { type FormEvent, type ReactNode, useState } from "react";
 import type { ContactSection as ContactContent } from "@/lib/website-types";
-import { sendContactMessage } from "@/store/website-store";
 import { showToast } from "@/components/Toaster";
 import { SectionHeading } from "@/components/site/site-ui";
 
@@ -24,14 +23,23 @@ function InfoLine({ icon: Icon, label, children }: { icon: typeof Phone; label: 
   );
 }
 
-/** Section 7: Contact. Messages sent here appear in the CMS Messages inbox. */
+/** Section 7: Contact. Messages sent here land in the CMS under Inbox → Enquiries. */
 export function ContactSection({ content }: { content: ContactContent }) {
   const [form, setForm] = useState(EMPTY_FORM);
   const update = (field: keyof typeof EMPTY_FORM) => (event: { target: { value: string } }) => setForm((current) => ({ ...current, [field]: event.target.value }));
 
-  const handleSubmit = (event: FormEvent) => {
+  const [isSending, setIsSending] = useState(false);
+
+  const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
-    sendContactMessage({ name: form.name.trim(), email: form.email.trim(), subject: form.subject.trim(), message: form.message.trim() });
+    setIsSending(true);
+    const response = await fetch("/api/enquiries", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: form.name.trim(), email: form.email.trim(), subject: form.subject.trim(), message: form.message.trim() }),
+    }).catch(() => null);
+    setIsSending(false);
+    if (!response?.ok) return showToast("Sorry, the message couldn't be sent. Please email us instead.");
     setForm(EMPTY_FORM);
     showToast("Thank you, your message has been sent");
   };
@@ -74,8 +82,8 @@ export function ContactSection({ content }: { content: ContactContent }) {
             </div>
             <input value={form.subject} onChange={update("subject")} placeholder="Subject" aria-label="Subject" className={FIELD} />
             <textarea required rows={5} value={form.message} onChange={update("message")} placeholder="Your Message" aria-label="Your Message" className={`${FIELD} resize-none`} />
-            <button type="submit" className="press w-full rounded-full bg-black px-6 py-3 text-sm font-semibold text-white hover:bg-neutral-800 sm:w-auto">
-              {content.submitLabel}
+            <button type="submit" disabled={isSending} className="press w-full rounded-full bg-black px-6 py-3 text-sm font-semibold text-white hover:bg-neutral-800 disabled:bg-neutral-400 sm:w-auto">
+              {isSending ? "Sending…" : content.submitLabel}
             </button>
           </form>
         </div>
