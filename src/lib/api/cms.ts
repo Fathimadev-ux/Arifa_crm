@@ -125,20 +125,45 @@ export function startPreview() {
 // ---------- Media (straight from the browser to storage) ----------
 
 const MAX_BYTES: Record<string, number> = { image: 15, video: 300, application: 30, model: 50 };
-export const MEDIA_ACCEPT = "image/*,video/*,application/pdf,model/gltf-binary,.glb";
+/** CMS_API.md: the files the backend accepts (content type and its file endings). */
+const ACCEPTED: Record<string, string[]> = {
+  "image/webp": [".webp"],
+  "image/jpeg": [".jpg", ".jpeg"],
+  "image/png": [".png"],
+  "image/avif": [".avif"],
+  "image/svg+xml": [".svg"],
+  "video/mp4": [".mp4"],
+  "video/webm": [".webm"],
+  "application/pdf": [".pdf"],
+  "model/gltf-binary": [".glb"],
+};
+/** For the file pickers: only these can be chosen. */
+export const MEDIA_ACCEPT = Object.entries(ACCEPTED).flat(2).join(",");
 
-const kindOf = (type: string) => (type.startsWith("model/") || type === "" ? "model" : type.split("/")[0]);
+/** The file's content type, from the browser or (a GLB often has none) from its ending; null when not accepted. */
+function contentTypeOf(file: File): string | null {
+  if (file.type in ACCEPTED) return file.type;
+  const name = file.name.toLowerCase();
+  return Object.keys(ACCEPTED).find((type) => ACCEPTED[type].some((ending) => name.endsWith(ending))) ?? null;
+}
+
+const kindOf = (type: string) => (type.startsWith("model/") ? "model" : type.split("/")[0]);
 
 async function sha256Of(file: File) {
+  // The browser only offers this on https or localhost; a plain http:// network address can't upload.
+  if (!crypto.subtle) throw new ApiError(0, "Uploads need a secure address: open the CMS on https (or localhost)");
   const digest = await crypto.subtle.digest("SHA-256", await file.arrayBuffer());
   return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }
+
+/** The backend takes 1–20000 pixels or nothing (ConfirmIn); an SVG without a set size reports 0, so it sends nothing. */
+const pixelsOf = (value: number) => (value > 0 && value <= 20_000 ? value : null);
 
 function imageSizeOf(file: File): Promise<{ width: number | null; height: number | null }> {
   if (!file.type.startsWith("image/")) return Promise.resolve({ width: null, height: null });
   return new Promise((resolve) => {
     const image = new Image();
-    image.onload = () => (resolve({ width: image.naturalWidth, height: image.naturalHeight }), URL.revokeObjectURL(image.src));
+    image.onload = () => (resolve({ width: pixelsOf(image.naturalWidth), height: pixelsOf(image.naturalHeight) }), URL.revokeObjectURL(image.src));
     image.onerror = () => resolve({ width: null, height: null });
     image.src = URL.createObjectURL(file);
   });
@@ -146,18 +171,24 @@ function imageSizeOf(file: File): Promise<{ width: number | null; height: number
 
 /** Start the upload (name, type, size, SHA-256), PUT the file to the returned address, then confirm it. */
 export function uploadMedia(file: File, altEn: string) {
-  const limitMb = MAX_BYTES[kindOf(file.type)] ?? 15;
+  const contentType = contentTypeOf(file);
+  if (!contentType) {
+    showToast("This file type isn't allowed: images (WebP, JPEG, PNG, AVIF, SVG), videos (MP4, WebM), PDF or GLB");
+    return Promise.resolve(undefined);
+  }
+  const limitMb = MAX_BYTES[kindOf(contentType)] ?? 15;
   if (file.size > limitMb * 1024 * 1024) {
     showToast(`This file is too large: up to ${limitMb} MB`);
     return Promise.resolve(undefined);
   }
   return runAction(
     async () => {
-      const contentType = file.type || "model/gltf-binary";
       const started = unwrap(await api.POST("/v1/cms/media/uploads", { body: { filename: file.name, content_type: contentType, size: file.size, sha256: await sha256Of(file), alt: altEn.trim() ? { en: altEn.trim() } : {} } }));
       if (!started.already_uploaded && started.upload_url) {
-        const stored = await fetch(started.upload_url, { method: "PUT", headers: started.headers, body: file });
-        if (!stored.ok) throw new ApiError(stored.status, "The file couldn't be stored: try again");
+        // Straight to storage (R2): a refusal here is the storage's, not the CMS backend's, so say so.
+        const stored = await fetch(started.upload_url, { method: "PUT", headers: started.headers, body: file }).catch(() => null);
+        if (!stored) throw new ApiError(0, "The storage refused the file: it must allow uploads from this site (ask the backend team)");
+        if (!stored.ok) throw new ApiError(stored.status, `The storage refused the file (error ${stored.status}): try again or ask the backend team`);
       }
       return unwrap(await api.POST("/v1/cms/media/{asset_id}/confirm", { params: { path: { asset_id: started.asset_id } }, body: await imageSizeOf(file) }));
     },

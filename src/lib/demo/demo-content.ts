@@ -146,6 +146,9 @@ export const CONTENT_ROUTES: [string, RegExp, Handler][] = [
   }],
   ["POST", /^\/v1\/cms\/media\/([^/]+)\/confirm$/, ([id], body) => {
     const item = media.find((entry) => entry.id === id);
+    // Like the backend's ConfirmIn: a size is 1–20000 pixels or null.
+    const isBadSize = (value: unknown) => typeof value === "number" && (value <= 0 || value > 20_000);
+    if (isBadSize(body.width) || isBadSize(body.height)) return problem(422, "width / height: must be between 1 and 20000, or empty");
     return item ? json(Object.assign(item, { width: body.width ?? null, height: body.height ?? null })) : problem(404, "Media not found");
   }],
   ["PATCH", /^\/v1\/cms\/media\/([^/]+)$/, ([id], body) => {

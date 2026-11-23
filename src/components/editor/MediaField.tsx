@@ -5,8 +5,11 @@ import { useRef, useState } from "react";
 import { MEDIA_ACCEPT, type MediaItem, uploadMedia, useMedia } from "@/lib/api/cms";
 import { INPUT } from "@/components/forms";
 
-/** A small preview: the image itself, or the file's name for a video, PDF or 3D model. */
+const isVideo = (item: MediaItem) => item.content_type.startsWith("video/");
+
+/** A small preview: the image itself, a video's first frame, or a file icon for a PDF or 3D model. */
 export function MediaThumb({ item, size = "size-16" }: { item: MediaItem; size?: string }) {
+  if (isVideo(item)) return <video src={item.src} muted playsInline preload="metadata" className={`${size} shrink-0 rounded-2xl bg-black object-cover`} />;
   return item.content_type.startsWith("image/") ? (
     // Library files live on content-addressed storage URLs; next/image needs their host configured, so a plain img here.
     // eslint-disable-next-line @next/next/no-img-element
@@ -16,6 +19,12 @@ export function MediaThumb({ item, size = "size-16" }: { item: MediaItem; size?:
       <FileText className="size-5" />
     </span>
   );
+}
+
+/** A video with play controls, so a saved video can be watched (nothing for other files). */
+export function VideoPlayer({ item }: { item: MediaItem }) {
+  if (!isVideo(item)) return null;
+  return <video src={item.src} controls playsInline preload="metadata" aria-label={item.alt.en ?? item.filename} className="aspect-video w-full rounded-2xl bg-black" />;
 }
 
 /** The library as a grid to pick from, with an upload button. */
@@ -86,6 +95,7 @@ export function MediaField({ title, value, onChange }: { title: string; value: R
           )}
         </div>
       </div>
+      {chosen && <div className="mt-2 max-w-md"><VideoPlayer item={chosen} /></div>}
       {mode === "PICK" && <Picker onPick={(item) => (onChange({ asset_id: item.id }), setMode("IDLE"))} onClose={() => setMode("IDLE")} />}
       {mode === "LINK" && (
         <div className="animate-enter mt-2 flex gap-2">

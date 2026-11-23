@@ -4,7 +4,7 @@ import { Upload } from "lucide-react";
 import { useRef, useState } from "react";
 import { MEDIA_ACCEPT, type MediaItem, saveAlt, uploadMedia, useMedia } from "@/lib/api/cms";
 import { INPUT } from "@/components/forms";
-import { MediaThumb } from "@/components/editor/MediaField";
+import { MediaThumb, VideoPlayer } from "@/components/editor/MediaField";
 import { Button, ErrorState, LoadingState, PageHeader, SegmentedControl, enterDelay } from "@/components/ui";
 
 const KINDS = [
@@ -40,6 +40,7 @@ function MediaCard({ item, index }: { item: MediaItem; index: number }) {
           </a>
         </div>
       </div>
+      <VideoPlayer item={item} />
       <input value={altEn} onChange={(event) => setAltEn(event.target.value)} placeholder="Alt text (English)" aria-label="Alt text in English" className={INPUT} />
       <input dir="rtl" value={altAr} onChange={(event) => setAltAr(event.target.value)} placeholder="النص البديل (Arabic)" aria-label="Alt text in Arabic" className={INPUT} />
       {isChanged && (

@@ -33,11 +33,23 @@ let accessToken: string | null = null;
 /** Signed in with the authenticator app (`mfa` in the token answer); an email-code session can't approve. */
 let isMfaSession = false;
 let renewal: Promise<boolean> | null = null;
+let renewTimer: ReturnType<typeof setTimeout> | undefined;
 let onSessionEnded: () => void = () => {};
 
-export function setAccessToken(token: string | null, mfa = false) {
+/** CRM_API.md §3: renew the 15-minute access token before it expires; this long before. */
+const RENEW_EARLY_MS = 60_000;
+
+/**
+ * Keeps the access token and schedules its renewal shortly before it expires (`expires_in`, seconds). When the
+ * renewal is refused (the refresh cookie expired, the 12-hour session ended), the login screen opens.
+ */
+export function setAccessToken(token: string | null, mfa = false, expiresIn?: number) {
   accessToken = token;
   isMfaSession = token !== null && mfa;
+  clearTimeout(renewTimer);
+  if (token && expiresIn) {
+    renewTimer = setTimeout(() => void renewSession().then((isRenewed) => isRenewed || onSessionEnded()), Math.max(expiresIn * 1000 - RENEW_EARLY_MS, 10_000));
+  }
 }
 
 export const hasAccessToken = () => accessToken !== null;
@@ -55,7 +67,7 @@ export function renewSession(): Promise<boolean> {
   renewal ??= api
     .POST("/v1/auth/refresh")
     .then(({ data }) => {
-      setAccessToken(data?.access_token ?? null, data?.mfa ?? false);
+      setAccessToken(data?.access_token ?? null, data?.mfa ?? false, data?.expires_in);
       return Boolean(data);
     })
     .catch(() => false)
