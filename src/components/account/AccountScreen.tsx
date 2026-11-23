@@ -41,7 +41,7 @@ function AuthenticatorSetup() {
       <a href={setup.otpauth_uri} className="inline-block text-xs text-neutral-500 underline-offset-2 hover:text-black hover:underline">
         Open in the authenticator app (on this phone)
       </a>
-      <TextInput label="6-digit code" inputMode="numeric" autoComplete="one-time-code" value={code} onChange={(event) => setCode(event.target.value.replace(/\D/g, ""))} maxLength={10} />
+      <TextInput label="6-digit code" inputMode="numeric" autoComplete="one-time-code" value={code} onChange={(event) => setCode(event.target.value.replace(/\D/g, ""))} minLength={6} maxLength={6} />
     </FormCard>
   );
 }

@@ -63,16 +63,42 @@ export const useInbox = () => useApi(INBOX, async () => unwrap(await api.GET("/v
 /** Staff names for owners and reassigning. Only manager, MD and admin may list them (null skips the call). */
 export const useStaff = (canList: boolean) => useApi(canList ? "staff" : null, async () => unwrap(await api.GET("/v1/users")));
 
+/**
+ * The customer accepted this quote version. The API document lists no quote statuses; "accepted" is the sample
+ * data's word, to be confirmed with the backend.
+ */
+export const isAcceptedQuote = (quote: QuoteVersion | undefined) => quote?.status === "accepted";
+
+/** For a move from the pipeline board (its cards carry no quote): whether the deal's newest quote is accepted. */
+export async function hasAcceptedQuote(dealId: string): Promise<boolean> {
+  try {
+    return isAcceptedQuote(unwrap(await api.GET("/v1/deals/{deal_id}/quotes", dealPath(dealId)))[0]);
+  } catch {
+    return false;
+  }
+}
+
 export const useOpenApprovals = (canList: boolean) =>
   useApi(canList ? "approvals" : null, async () => unwrap(await api.GET("/v1/approvals", { params: { query: { status: "open", limit: PAGE_SIZE } } })).items, POLL_MS);
 
 /**
- * The open approval of a quote version: from the approvals list (manager, MD) or the person's inbox
- * (sales see theirs there, with the approval id as `ref_id`).
+ * The open approval of a quote version that is this person's to decide: from the approvals list (manager, MD) or
+ * the person's inbox (sales see theirs there, with the approval id as `ref_id`). A quote can wait for two steps
+ * (D3: below the minimum, the manager first, then the salesperson), so only the step assigned to this person, or
+ * unassigned and waiting for their role, counts: nobody is asked to approve someone else's step.
  */
-export function findOpenApproval(version: QuoteVersion, dealId: string, approvals: Approval[] | undefined, inbox: InboxItem[] | undefined): { id: string; dueAt: string | null } | null {
-  const approval = approvals?.find((item) => item.quote_version_id === version.id);
+export function findOpenApproval(
+  version: QuoteVersion,
+  dealId: string,
+  approvals: Approval[] | undefined,
+  inbox: InboxItem[] | undefined,
+  me: { userId: string | undefined; role: string; canListApprovals: boolean },
+): { id: string; dueAt: string | null } | null {
+  const isMine = (item: Approval) => (item.assigned_user_id ? item.assigned_user_id === me.userId : item.required_role === me.role);
+  const approval = approvals?.find((item) => item.quote_version_id === version.id && isMine(item));
   if (approval) return { id: approval.id, dueAt: approval.deadline_at };
+  // Manager and MD decide from the approvals list only (their inbox can hold other people's steps).
+  if (me.canListApprovals) return null;
   const inboxItem = inbox?.find((item) => item.deal_id === dealId && item.kind.includes("approval"));
   return inboxItem ? { id: inboxItem.ref_id, dueAt: inboxItem.due_at } : null;
 }

@@ -36,9 +36,11 @@ export function lostReasonLabel(reason: string): string {
   return LOST_REASONS.find((item) => item.id === reason)?.label ?? reason;
 }
 
-export function nextStageOf(stage: DealStage): DealStage | null {
+/** The next stage. Once the customer has accepted the quote, Negotiation is skipped: there is nothing left to negotiate. */
+export function nextStageOf(stage: DealStage, isQuoteAccepted = false): DealStage | null {
   const position = STAGE_FLOW.indexOf(stage);
-  return position === -1 || position === STAGE_FLOW.length - 1 ? null : STAGE_FLOW[position + 1];
+  const next = position === -1 || position === STAGE_FLOW.length - 1 ? null : STAGE_FLOW[position + 1];
+  return next === "NEGOTIATION" && isQuoteAccepted ? "READY_TO_CLOSE" : next;
 }
 
 export function isClosedStage(stage: DealStage): boolean {

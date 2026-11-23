@@ -6,7 +6,7 @@ import { can } from "@/config/roles";
 import { isClosedStage } from "@/config/stages";
 import type { DealStage } from "@/lib/api/client";
 import { useProducts } from "@/lib/api/catalogue";
-import { type Deal, type DealFilters, moveDeal, useFilteredDeals } from "@/lib/api/crm";
+import { type Deal, type DealFilters, hasAcceptedQuote, moveDeal, useFilteredDeals } from "@/lib/api/crm";
 import { EMPTY_FILTERS, type PipelineFilters, applyFilters, moveBlockedReason } from "@/lib/pipeline-cards";
 import { useStaffNames } from "@/hooks/useStaffNames";
 import { useSession } from "@/store/session";
@@ -56,8 +56,10 @@ export function PipelineScreen() {
     setServerFilters(EMPTY_SERVER_FILTERS);
   };
 
-  const handleMove = (deal: Deal, targetStage: DealStage) => {
-    const blockedReason = moveBlockedReason(deal, targetStage);
+  const handleMove = async (deal: Deal, targetStage: DealStage) => {
+    // Leaving Quotation depends on the quote: once the customer accepted it, Negotiation is skipped.
+    const isQuoteAccepted = deal.stage === "QUOTATION" && targetStage !== "LOST" && (await hasAcceptedQuote(deal.id));
+    const blockedReason = moveBlockedReason(deal, targetStage, isQuoteAccepted);
     if (blockedReason) return showToast(blockedReason);
     void moveDeal(deal, targetStage);
   };

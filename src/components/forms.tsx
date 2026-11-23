@@ -23,6 +23,45 @@ export function TextInput({ label, className, ...props }: { label: string } & In
   );
 }
 
+/** Keys a date box still takes: move on, close the calendar, or clear the date. */
+const DATE_KEYS = new Set(["Tab", "Escape", "Backspace", "Delete"]);
+
+function openCalendar(input: HTMLInputElement) {
+  try {
+    input.showPicker();
+  } catch {
+    // The browser refused (e.g. an older browser): its own calendar icon still opens it.
+  }
+}
+
+/** A date box: a click (or Enter / Space) opens the calendar. Dates are picked, never typed or pasted. */
+export function DatePicker({ className = INPUT, ...props }: Omit<InputHTMLAttributes<HTMLInputElement>, "type">) {
+  return (
+    <input
+      {...props}
+      type="date"
+      className={`${className} cursor-pointer`}
+      onClick={(event) => openCalendar(event.currentTarget)}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          openCalendar(event.currentTarget);
+        } else if (!DATE_KEYS.has(event.key)) event.preventDefault();
+      }}
+      onPaste={(event) => event.preventDefault()}
+      onDrop={(event) => event.preventDefault()}
+    />
+  );
+}
+
+export function DateInput({ label, className, ...props }: { label: string } & Omit<InputHTMLAttributes<HTMLInputElement>, "type">) {
+  return (
+    <Field label={label} className={className}>
+      <DatePicker {...props} />
+    </Field>
+  );
+}
+
 export function TextArea({ label, className, ...props }: { label: string } & TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return (
     <Field label={label} className={className}>

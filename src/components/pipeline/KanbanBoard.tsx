@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { STAGES } from "@/config/stages";
 import type { DealStage } from "@/lib/api/client";
-import type { Deal } from "@/lib/api/crm";
+import { type Deal, hasAcceptedQuote } from "@/lib/api/crm";
 import { quickMoveStageOf } from "@/lib/pipeline-cards";
 import { DealCard } from "@/components/pipeline/DealCard";
 
@@ -16,8 +16,16 @@ interface KanbanBoardProps {
 export function KanbanBoard({ deals, ownerName, onMove }: KanbanBoardProps) {
   const [draggedDeal, setDraggedDeal] = useState<Deal | null>(null);
   const [hoveredStage, setHoveredStage] = useState<DealStage | null>(null);
+  // A card in Quotation whose quote the customer accepted goes to Ready to close, so that column is the one to mark.
+  const [isDraggedQuoteAccepted, setIsDraggedQuoteAccepted] = useState(false);
 
-  const allowedTarget = draggedDeal && quickMoveStageOf(draggedDeal);
+  const allowedTarget = draggedDeal && quickMoveStageOf(draggedDeal, isDraggedQuoteAccepted);
+
+  const startDrag = (deal: Deal) => {
+    setDraggedDeal(deal);
+    setIsDraggedQuoteAccepted(false);
+    if (deal.stage === "QUOTATION") void hasAcceptedQuote(deal.id).then(setIsDraggedQuoteAccepted);
+  };
 
   const endDrag = () => {
     setDraggedDeal(null);
@@ -66,7 +74,7 @@ export function KanbanBoard({ deals, ownerName, onMove }: KanbanBoardProps) {
                     isDragging={draggedDeal?.id === deal.id}
                     quickMoveStage={quickMoveStage}
                     onQuickMove={() => quickMoveStage && onMove(deal, quickMoveStage)}
-                    onDragStart={() => setDraggedDeal(deal)}
+                    onDragStart={() => startDrag(deal)}
                     onDragEnd={endDrag}
                   />
                 );

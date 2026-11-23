@@ -10,7 +10,7 @@ import { useNow } from "@/hooks/useNow";
 import { useSession } from "@/store/session";
 import { BarList } from "@/components/dashboards/BarList";
 import { type Column, DataTable } from "@/components/DataTable";
-import { TextInput } from "@/components/forms";
+import { DateInput } from "@/components/forms";
 import { ErrorState, LoadingState, PageHeader, StatCard } from "@/components/ui";
 
 const DAY = 86_400_000;
@@ -114,8 +114,8 @@ function Dashboards({ today }: { today: number }) {
     <div className="space-y-4 md:space-y-5">
       <PageHeader title="Dashboards">
         <div className="flex gap-2">
-          <TextInput label="From" type="date" value={period.from} max={period.to} onChange={(event) => setPeriod((current) => ({ ...current, from: event.target.value }))} />
-          <TextInput label="To" type="date" value={period.to} min={period.from} onChange={(event) => setPeriod((current) => ({ ...current, to: event.target.value }))} />
+          <DateInput label="From" value={period.from} max={period.to} onChange={(event) => setPeriod((current) => ({ ...current, from: event.target.value }))} />
+          <DateInput label="To" value={period.to} min={period.from} onChange={(event) => setPeriod((current) => ({ ...current, to: event.target.value }))} />
         </div>
       </PageHeader>
       {sales.error && !sales.data ? <ErrorState message={sales.error.message} /> : sales.data ? <SalesSection board={sales.data} /> : <LoadingState />}

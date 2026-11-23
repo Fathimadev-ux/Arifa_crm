@@ -6,7 +6,7 @@ import type { DealDetail } from "@/lib/api/crm";
 import { type OrderStatus, updateOrderStatus, useDealOrder } from "@/lib/api/deal-work";
 import { formatDate, humanize } from "@/lib/format";
 import { useSession } from "@/store/session";
-import { INPUT } from "@/components/forms";
+import { DatePicker, INPUT } from "@/components/forms";
 import { Button, DetailList, Section } from "@/components/ui";
 
 /** The step after each order status (§15.3): in production → ready → shipped → delivered. */
@@ -51,7 +51,7 @@ export function DealOrder({ deal }: { deal: DealDetail }) {
           {nextStatus === "shipped" && (
             <input value={trackingRef} onChange={(event) => setTrackingRef(event.target.value)} placeholder="Tracking number (optional)" aria-label="Tracking number" className={`${INPUT} w-56`} />
           )}
-          <input type="date" value={onDate} onChange={(event) => setOnDate(event.target.value)} aria-label="On date (empty = today)" title="Leave empty for today" className={`${INPUT} w-44`} />
+          <DatePicker value={onDate} onChange={(event) => setOnDate(event.target.value)} aria-label="On date (empty = today)" title="Leave empty for today" className={`${INPUT} w-44`} />
           <Button type="submit">Mark {humanize(nextStatus).toLowerCase()}</Button>
           <Button type="button" variant="secondary" onClick={() => void updateOrderStatus(order, "cancelled", undefined, onDate).then(reset)}>
             Cancel order

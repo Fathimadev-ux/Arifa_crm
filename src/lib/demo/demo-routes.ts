@@ -127,7 +127,11 @@ const DEAL_ROUTES: [string, RegExp, Handler][] = [
       getState().lostFrom[deal.id] = deal.stage;
       changeDeal(deal, { stage: "LOST", lost_reason: body.lost_reason as string, lost_note: (body.lost_note as string) ?? null, ai_enabled: false, ai_paused_reason: null, next_action_at: null }, `Marked lost: ${words(String(body.lost_reason)).toLowerCase()}`);
     } else {
-      if (STAGE_FLOW.indexOf(to) !== STAGE_FLOW.indexOf(deal.stage) + 1) return problem(422, "Deals move one stage at a time");
+      // A quote the customer accepted skips Negotiation (Quotation -> Ready to close); otherwise one stage at a time.
+      const isQuoteAccepted = getState().quotes[deal.id][0]?.status === "accepted";
+      if (to === "NEGOTIATION" && isQuoteAccepted) return problem(422, "The customer accepted the quote: move it to Ready to close");
+      const isAcceptedSkip = deal.stage === "QUOTATION" && to === "READY_TO_CLOSE" && isQuoteAccepted;
+      if (!isAcceptedSkip && STAGE_FLOW.indexOf(to) !== STAGE_FLOW.indexOf(deal.stage) + 1) return problem(422, "Deals move one stage at a time");
       changeDeal(deal, { stage: to }, `Moved to ${words(to).toLowerCase()}`);
     }
     return json(deal);

@@ -4,13 +4,13 @@ import { Bot } from "lucide-react";
 import { useState } from "react";
 import { can } from "@/config/roles";
 import { LOST_REASONS, type LostReason, isClosedStage, nextStageOf, stageLabel } from "@/config/stages";
-import { type DealDetail, moveDeal, reassignDeal, reopenDeal, setAiEnabled, useQuotes } from "@/lib/api/crm";
-import { setSpecialPrice, setTakeover } from "@/lib/api/deal-work";
+import { type DealDetail, isAcceptedQuote, moveDeal, reassignDeal, reopenDeal, setAiEnabled, useQuotes } from "@/lib/api/crm";
+import { setSpecialPrice, setTakeover, useQuoteVersion } from "@/lib/api/deal-work";
 import { formatRelative, humanize } from "@/lib/format";
 import { useStaffNames } from "@/hooks/useStaffNames";
 import { useSession } from "@/store/session";
-import { FormCard, TextArea, TextInput } from "@/components/forms";
-import { showToast } from "@/components/Toaster";
+import { DateInput, FormCard, TextArea, TextInput } from "@/components/forms";
+import { QuoteValues } from "@/components/deal/QuotePanel";
 import { Avatar, Button, enterDelay } from "@/components/ui";
 
 const FIELD = "glass h-10 rounded-full px-4 text-sm shadow-sm outline-none transition-shadow placeholder:text-neutral-400 focus:border-black focus:shadow-md";
@@ -65,7 +65,7 @@ function PaymentForm({ deal, onClose }: { deal: DealDetail; onClose: () => void 
         <TextInput label="Amount" type="number" min="0.01" step="any" value={payment.amount} onChange={(event) => update({ amount: event.target.value })} />
         <TextInput label="Currency" value={payment.currency} onChange={(event) => update({ currency: event.target.value })} maxLength={3} />
         <TextInput label="Method" placeholder="Bank transfer" value={payment.method} onChange={(event) => update({ method: event.target.value })} maxLength={100} />
-        <TextInput label="Paid on" type="date" value={payment.paid_on} onChange={(event) => update({ paid_on: event.target.value })} />
+        <DateInput label="Paid on" value={payment.paid_on} onChange={(event) => update({ paid_on: event.target.value })} />
         <TextInput label="Reference" className="col-span-2" value={payment.reference} onChange={(event) => update({ reference: event.target.value })} maxLength={200} />
       </div>
       <TextArea label="Note" rows={2} value={payment.note} onChange={(event) => update({ note: event.target.value })} maxLength={2000} />
@@ -73,26 +73,49 @@ function PaymentForm({ deal, onClose }: { deal: DealDetail; onClose: () => void 
   );
 }
 
-/** §15.2: WON is a human step; the expected re-order date is optional. The order record is created. */
+/**
+ * §15.2: WON is a human step; the expected re-order date is optional. The order record is created.
+ * The quote being closed is shown first; afterwards the quote the order was made from (final_quote_version_id),
+ * loaded from the backend, with a warning if it isn't the one that was shown.
+ */
 function WonForm({ deal, onClose }: { deal: DealDetail; onClose: () => void }) {
   const [reorderDate, setReorderDate] = useState("");
   const { data: quotes } = useQuotes(deal.id);
+  const [shownQuoteId, setShownQuoteId] = useState<string | null>(null);
+  const [order, setOrder] = useState<{ number: string; final_quote_version_id: string } | null>(null);
+  const { data: finalQuote } = useQuoteVersion(order?.final_quote_version_id ?? null);
+  const currentQuote = quotes?.[0];
 
-  /** The answer is the new order: say which quote version it was made from (final_quote_version_id). */
-  const announce = (result: unknown) => {
-    const order = result as { number?: string; final_quote_version_id?: string } | undefined;
-    const version = quotes?.find((quote) => quote.id === order?.final_quote_version_id);
-    if (order?.number) showToast(`Order ${order.number} created${version ? ` from quote v${version.version_no}` : ""}`);
-  };
+  if (order) {
+    return (
+      <div className="animate-enter space-y-4 rounded-3xl border border-neutral-200 bg-white/60 p-5">
+        <p className="text-sm font-semibold">
+          Won · order {order.number}
+          {finalQuote && ` from quote v${finalQuote.version_no}`}
+        </p>
+        {order.final_quote_version_id !== shownQuoteId && <p className="text-sm font-medium">The order was made from a different quote than the one shown: these are its values.</p>}
+        {finalQuote ? <QuoteValues quote={finalQuote} /> : <div className="h-24 animate-pulse rounded-2xl bg-neutral-100" />}
+        <Button onClick={onClose}>Done</Button>
+      </div>
+    );
+  }
 
   return (
     <FormCard
       title="Mark won"
       submitLabel="Mark won"
       onCancel={onClose}
-      onSubmit={() => void moveDeal(deal, "WON", { won: { expected_reorder_date: reorderDate || null } }).then((result) => result && (announce(result), onClose()))}
+      onSubmit={() => {
+        setShownQuoteId(currentQuote?.id ?? null);
+        void moveDeal(deal, "WON", { won: { expected_reorder_date: reorderDate || null } }).then((result) => {
+          const created = result as { number: string; final_quote_version_id: string } | undefined;
+          if (created?.final_quote_version_id) setOrder(created);
+          else if (result) onClose();
+        });
+      }}
     >
-      <TextInput label="Expected re-order (optional)" type="date" value={reorderDate} onChange={(event) => setReorderDate(event.target.value)} />
+      {currentQuote ? <QuoteValues quote={currentQuote} /> : <p className="text-sm text-neutral-500">{quotes ? "This deal has no quote." : "Loading the quote…"}</p>}
+      <DateInput label="Expected re-order (optional)" value={reorderDate} onChange={(event) => setReorderDate(event.target.value)} />
     </FormCard>
   );
 }
@@ -124,6 +147,9 @@ export function StageActions({ deal }: { deal: DealDetail }) {
   const [mode, setMode] = useState<"IDLE" | "LOST" | "REOPEN" | "PAYMENT" | "WON" | "OFFER" | "MOVE">("IDLE");
   const [lostReason, setLostReason] = useState<LostReason | "">("");
   const [text, setText] = useState("");
+  const { data: quotes } = useQuotes(deal.id);
+  // Once the customer accepted the newest quote, the next step is Ready to close, never Negotiation.
+  const nextStage = nextStageOf(deal.stage, isAcceptedQuote(quotes?.[0]));
 
   const close = () => {
     setMode("IDLE");
@@ -156,9 +182,8 @@ export function StageActions({ deal }: { deal: DealDetail }) {
   }
 
   if (mode === "MOVE") {
-    const target = nextStageOf(deal.stage);
-    return target ? (
-      <InlineForm canSubmit submitLabel={`Move to ${stageLabel(target)}`} onCancel={close} onSubmit={() => void moveDeal(deal, target, { reason: text }).then(close)}>
+    return nextStage ? (
+      <InlineForm canSubmit submitLabel={`Move to ${stageLabel(nextStage)}`} onCancel={close} onSubmit={() => void moveDeal(deal, nextStage, { reason: text }).then(close)}>
         <input autoFocus value={text} onChange={(event) => setText(event.target.value)} placeholder="Reason (optional)" maxLength={500} className={`${FIELD} w-64`} />
       </InlineForm>
     ) : null;
@@ -173,7 +198,6 @@ export function StageActions({ deal }: { deal: DealDetail }) {
   }
   if (isClosedStage(deal.stage)) return null;
 
-  const nextStage = nextStageOf(deal.stage);
   // Payment and WON are human steps with their own details (§15).
   const needsForm = nextStage === "PAYMENT" || nextStage === "WON";
   const canMove = nextStage && (!needsForm || can(role, "CONFIRM_PAYMENT"));

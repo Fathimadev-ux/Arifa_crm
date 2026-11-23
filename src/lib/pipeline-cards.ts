@@ -33,16 +33,17 @@ export function applyFilters(deals: Deal[], filters: PipelineFilters, ownerName:
 }
 
 /** Why a deal can't move to `targetStage` from the board, or null when it may (the backend checks the rest). */
-export function moveBlockedReason(deal: Deal, targetStage: DealStage): string | null {
+export function moveBlockedReason(deal: Deal, targetStage: DealStage, isQuoteAccepted = false): string | null {
   if (targetStage === deal.stage) return null;
   if (isClosedStage(deal.stage)) return "Deal is closed";
   if (targetStage === "LOST") return "Open the deal to mark it lost with a reason";
-  if (targetStage !== nextStageOf(deal.stage)) return "Deals move one stage at a time";
+  if (targetStage === "NEGOTIATION" && isQuoteAccepted) return "The customer accepted the quote: move it to Ready to close";
+  if (targetStage !== nextStageOf(deal.stage, isQuoteAccepted)) return "Deals move one stage at a time";
   return null;
 }
 
 /** The stage this deal can move to with one click, or null. */
-export function quickMoveStageOf(deal: Deal): DealStage | null {
-  const nextStage = nextStageOf(deal.stage);
-  return nextStage && !moveBlockedReason(deal, nextStage) ? nextStage : null;
+export function quickMoveStageOf(deal: Deal, isQuoteAccepted = false): DealStage | null {
+  const nextStage = nextStageOf(deal.stage, isQuoteAccepted);
+  return nextStage && !moveBlockedReason(deal, nextStage, isQuoteAccepted) ? nextStage : null;
 }

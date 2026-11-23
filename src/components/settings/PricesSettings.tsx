@@ -4,7 +4,7 @@ import { useState } from "react";
 import { type MaterialRate, decideRate, overrideFxRate, useFxRates, useMaterialFreshness, usePriceProposals } from "@/lib/api/admin";
 import { formatDate, formatDateTime, humanize } from "@/lib/format";
 import { type Column, DataTable } from "@/components/DataTable";
-import { FormCard, INPUT, TextInput } from "@/components/forms";
+import { DateInput, FormCard, INPUT, TextInput } from "@/components/forms";
 import { Button, Section } from "@/components/ui";
 
 /** A proposed material rate (from the scraper or staff): accept it (correcting it if needed) or reject it. */
@@ -54,7 +54,7 @@ function FxOverride({ onClose }: { onClose: () => void }) {
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <TextInput label="Currency" placeholder="USD" value={currency} onChange={(event) => setCurrency(event.target.value.toUpperCase())} maxLength={3} />
         <TextInput label="1 unit = AED" type="number" min="0" step="any" value={rate} onChange={(event) => setRate(event.target.value)} />
-        <TextInput label="For the day" type="date" value={asOf} onChange={(event) => setAsOf(event.target.value)} />
+        <DateInput label="For the day" value={asOf} onChange={(event) => setAsOf(event.target.value)} />
       </div>
     </FormCard>
   );

@@ -16,8 +16,11 @@ import { Button, DetailList, Section } from "@/components/ui";
 
 type Mode = "VIEW" | "REVISE" | "MANUAL";
 
-/** Approve, ask for a correction or reject, with an optional note. The backend checks MFA and whose deal it is. */
-function ApprovalActions({ approval, dealId }: { approval: { id: string; dueAt: string | null }; dealId: string }) {
+/**
+ * Approve, ask for a correction or reject, with an optional note. The backend checks MFA and whose deal it is.
+ * A quote with no delivery time can't be approved (it stays pending until a revision adds one).
+ */
+function ApprovalActions({ approval, dealId, hasDelivery }: { approval: { id: string; dueAt: string | null }; dealId: string; hasDelivery: boolean }) {
   const now = useNow();
   const [note, setNote] = useState("");
   const isOverdue = now !== null && approval.dueAt !== null && new Date(approval.dueAt).getTime() < now;
@@ -35,8 +38,11 @@ function ApprovalActions({ approval, dealId }: { approval: { id: string; dueAt: 
         placeholder="Note (optional)"
         className="h-10 w-full rounded-full border border-neutral-200 bg-white px-4 text-sm transition-[border-color,box-shadow] outline-none hover:border-neutral-400 focus:shadow-md placeholder:text-neutral-400 focus:border-black"
       />
+      {!hasDelivery && <p className="text-sm font-medium">Select a delivery date to approve this quotation.</p>}
       <div className="flex flex-wrap gap-2">
-        <Button onClick={() => decide("approve")}>Approve</Button>
+        <Button disabled={!hasDelivery} onClick={() => decide("approve")}>
+          Approve
+        </Button>
         <Button variant="secondary" onClick={() => decide("correct")}>
           Ask for correction
         </Button>
@@ -108,9 +114,27 @@ function QuoteLines({ quote }: { quote: QuoteVersion }) {
   );
 }
 
+/** A quote's items and totals: what the customer agreed to (shown when the deal is closed). */
+export function QuoteValues({ quote }: { quote: QuoteVersion }) {
+  return (
+    <>
+      <QuoteLines quote={quote} />
+      <DetailList
+        items={[
+          ["Quote", `Version ${quote.version_no}`],
+          ["Subtotal", formatMoney(quote.subtotal, quote.currency)],
+          ["VAT", `${formatMoney(quote.vat_amount, quote.currency)} · ${Number(quote.vat_rate)}%`],
+          ["Total", <span key="total" className="font-semibold">{formatMoney(quote.total, quote.currency)}</span>],
+          ["Total in AED", quote.currency !== "AED" && formatMoney(quote.total_aed)],
+        ]}
+      />
+    </>
+  );
+}
+
 /** The newest quote version (the backend builds every price) and the earlier versions under it. */
 export function QuotePanel({ deal }: { deal: DealDetail }) {
-  const { role } = useSession();
+  const { user, role } = useSession();
   const { data: quotes } = useQuotes(deal.id);
   const { data: approvals } = useOpenApprovals(can(role, "LIST_APPROVALS"));
   const { data: inbox } = useInbox();
@@ -158,7 +182,7 @@ export function QuotePanel({ deal }: { deal: DealDetail }) {
     );
   }
 
-  const openApproval = can(role, "APPROVE_QUOTES") ? findOpenApproval(currentQuote, deal.id, approvals, inbox) : null;
+  const openApproval = can(role, "APPROVE_QUOTES") ? findOpenApproval(currentQuote, deal.id, approvals, inbox, { userId: user?.id, role, canListApprovals: can(role, "LIST_APPROVALS") }) : null;
   const comparedQuote = olderQuotes.find((quote) => quote.id === compareId);
 
   return (
@@ -205,7 +229,7 @@ export function QuotePanel({ deal }: { deal: DealDetail }) {
       )}
       <ApprovalStatus versionId={currentQuote.id} canList={can(role, "LIST_APPROVALS")} approvals={approvals} />
 
-      {openApproval && mode === "VIEW" && <ApprovalActions approval={openApproval} dealId={deal.id} />}
+      {openApproval && mode === "VIEW" && <ApprovalActions approval={openApproval} dealId={deal.id} hasDelivery={Boolean(currentQuote.delivery_time_text?.trim())} />}
 
       {canQuote && mode === "VIEW" && (
         <div className="mt-5 flex flex-wrap gap-2">

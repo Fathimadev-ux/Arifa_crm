@@ -73,7 +73,8 @@ interface DealSeed {
   createdDaysAgo: number;
   nextInHours?: number;
   aiPaused?: boolean;
-  quotes?: { unitPrice?: number; status: string; ageHours: number }[];
+  /** `noDelivery`: the quote has no delivery time yet, so it can't be approved until a revision adds one. */
+  quotes?: { unitPrice?: number; status: string; ageHours: number; noDelivery?: true }[];
   lostReason?: string;
   history: [actor: "ai" | "buyer" | "staff", text: string][];
 }
@@ -88,9 +89,9 @@ const SEEDS: DealSeed[] = [
   { number: 1004, company: "Kovai Cloud Kitchens", contact: "Vignesh R", phone: "+919003155408", channel: "whatsapp", city: "Coimbatore", product: "1000ml Round Container", quantity: 25000, stage: "QUOTATION", owner: "Divya", createdDaysAgo: 3, nextInHours: 1,
     quotes: [{ status: "pending_approval", ageHours: 2 }], history: [["ai", "Qualified: score 76"], ["ai", "Built the quote from the price list, waiting for approval"]] },
   { number: 1005, company: "FreshBox Meals", contact: "Sneha Reddy", phone: "+919849030217", channel: "email", city: "Hyderabad", product: "750ml Round Container", quantity: 40000, stage: "QUOTATION", owner: "Arun", createdDaysAgo: 5, nextInHours: -6,
-    quotes: [{ status: "sent", ageHours: 50 }], history: [["ai", "Built the quote"], ["staff", "Approved the quote"], ["ai", "Sent the quote by email"]] },
+    quotes: [{ status: "accepted", ageHours: 50 }], history: [["ai", "Built the quote"], ["staff", "Approved the quote"], ["ai", "Sent the quote by email"], ["buyer", "Accepted the quote"]] },
   { number: 1045, company: "Annapoorna Ready Foods", contact: "Karthik Raman", phone: "+919789041256", channel: "whatsapp", city: "Coimbatore", product: "750ml Round Container", quantity: 50000, stage: "NEGOTIATION", owner: "Divya", createdDaysAgo: 6, nextInHours: 2,
-    quotes: [{ status: "superseded", ageHours: 70 }, { unitPrice: 8.7, status: "pending_approval", ageHours: 1 }],
+    quotes: [{ status: "superseded", ageHours: 70 }, { unitPrice: 8.7, status: "pending_approval", ageHours: 1, noDelivery: true }],
     history: [["ai", "Sent the quote on WhatsApp"], ["buyer", "Asked for ₹8.50 per piece"], ["ai", "Below the AI limit: ₹8.70 counter-offer sent for approval"]] },
   { number: 1007, company: "Spice Route Catering", contact: "Joseph Mathew", phone: "+919447066231", channel: "phone", city: "Kochi", product: "450ml Foil Container", quantity: 60000, stage: "READY_TO_CLOSE", owner: "Meena", createdDaysAgo: 9, nextInHours: 4,
     quotes: [{ unitPrice: 6.6, status: "accepted", ageHours: 30 }], history: [["ai", "Agreed at ₹6.60"], ["buyer", "Accepted the quote"]] },
@@ -181,8 +182,10 @@ export function createDemoState(now: number): DemoState {
       personal_contact_shared_at: null,
     });
 
-    const versions = (seed.quotes ?? []).map((quote, index) =>
-      buildQuoteVersion(seed.number, index + 1, [{ description: seed.product, quantity: seed.quantity, unitPrice: quote.unitPrice ?? unitPriceOf(seed.product) }], quote.status, now - quote.ageHours * HOUR),
+    const versions = (seed.quotes ?? []).map((quote, index) => ({
+      ...buildQuoteVersion(seed.number, index + 1, [{ description: seed.product, quantity: seed.quantity, unitPrice: quote.unitPrice ?? unitPriceOf(seed.product) }], quote.status, now - quote.ageHours * HOUR),
+      ...(quote.noDelivery && { delivery_time_text: null }),
+    }),
     );
     for (const version of versions) {
       if (version.status === "pending_approval") state.approvals.push(buildApproval(version, seed.number, ownerId, new Date(version.created_at).getTime()));

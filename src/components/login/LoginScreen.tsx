@@ -106,7 +106,7 @@ export function LoginScreen() {
   };
 
   const signedIn = (tokens: Tokens) => {
-    setAccessToken(tokens.access_token, tokens.mfa);
+    setAccessToken(tokens.access_token, tokens.mfa, tokens.expires_in);
     if (tokens.must_change_password) goTo({ name: "NEW_PASSWORD" });
     else openCrm();
   };
@@ -143,7 +143,7 @@ export function LoginScreen() {
     goTo({ name: "SIGN_IN" }, "Password changed. Log in with the new one.");
   });
 
-  const codeField = <Field label="6-digit code" autoFocus value={code} onChange={(event) => setCode(event.target.value.replace(/\D/g, ""))} inputMode="numeric" autoComplete="one-time-code" minLength={6} maxLength={10} />;
+  const codeField = <Field label="6-digit code" autoFocus value={code} onChange={(event) => setCode(event.target.value.replace(/\D/g, ""))} inputMode="numeric" autoComplete="one-time-code" minLength={6} maxLength={6} />;
   const newPasswordField = (
     <Field label={`New password (at least ${MIN_PASSWORD_LENGTH} characters)`} type="password" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} autoComplete="new-password" minLength={MIN_PASSWORD_LENGTH} />
   );

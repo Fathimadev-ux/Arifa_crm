@@ -4,7 +4,7 @@ import { Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { type PriceTier, type Product, addPriceTier, editPriceTier, removePriceTier, usePriceTiers } from "@/lib/api/catalogue";
 import { formatCount, formatDate, formatMoney } from "@/lib/format";
-import { INPUT } from "@/components/forms";
+import { DatePicker, INPUT } from "@/components/forms";
 import { Button } from "@/components/ui";
 
 interface TierDraft {
@@ -31,7 +31,7 @@ function TierInputs({ draft, isNew, onChange }: { draft: TierDraft; isNew: boole
       <td className="px-1 py-1.5">{field("listPrice", "List price")}</td>
       <td className="space-y-1.5 px-1 py-1.5">
         {field("minPrice", "Minimum")}
-        {isNew && <input type="date" value={draft.validFrom} onChange={(event) => onChange({ ...draft, validFrom: event.target.value })} aria-label="Valid from (empty = now)" title="Valid from (empty = now)" className={INPUT} />}
+        {isNew && <DatePicker value={draft.validFrom} onChange={(event) => onChange({ ...draft, validFrom: event.target.value })} aria-label="Valid from (empty = now)" title="Valid from (empty = now)" />}
       </td>
     </>
   );
