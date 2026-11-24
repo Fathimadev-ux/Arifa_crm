@@ -50,7 +50,10 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 /** Content is edited by content editors, admin, manager and MD; a salesperson gets a note and Log out instead. */
 export function CmsOnly({ children }: { children: React.ReactNode }) {
   const { user, role, logOut } = useSession();
-  if (!user || canEditContent(role)) return children;
+  // Nothing until the signed-in person is known: the content screens load data, and a role without content
+  // rights (e.g. Sales) must not ask for it even for a moment.
+  if (!user) return null;
+  if (canEditContent(role)) return children;
   return (
     <main className="grid min-h-screen place-items-center px-4">
       <div className="panel w-full max-w-sm space-y-4 p-8 text-center">

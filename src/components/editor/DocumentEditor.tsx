@@ -60,6 +60,9 @@ function EditorForm({ collection, docKey, schema, doc, isNew, isSingle }: { coll
   const isChanged = JSON.stringify(data) !== baseline || isOrderChanged;
   const english = data.en ?? {};
   const title = String(english.title ?? english.name ?? english.question ?? english.company_name ?? docKey);
+  // A draft may be unfinished, but a required English field (marked *) must be filled before it goes live.
+  const isBlank = (value: unknown) => value === undefined || value === null || (typeof value === "string" && value.trim() === "") || (Array.isArray(value) && value.length === 0);
+  const missing = (schema.required ?? []).filter((field) => isBlank(english[field])).map((field) => schema.properties?.[field]?.title ?? field);
 
   const busy = async <T,>(work: () => Promise<T>) => {
     setIsBusy(true);
@@ -102,10 +105,11 @@ function EditorForm({ collection, docKey, schema, doc, isNew, isSingle }: { coll
           <Eye className="size-4" /> Preview
         </Button>
         <input value={note} onChange={(event) => setNote(event.target.value)} placeholder="Note (optional)" aria-label="Publish note" maxLength={500} className="glass h-10 w-44 rounded-full px-4 text-sm shadow-sm outline-none placeholder:text-neutral-400 focus:bg-white" />
-        <Button disabled={isBusy || (!isChanged && !doc?.draft)} onClick={() => void publish()}>
+        <Button disabled={isBusy || missing.length > 0 || (!isChanged && !doc?.draft)} onClick={() => void publish()}>
           <Send className="size-4" /> Publish
         </Button>
       </div>
+      {missing.length > 0 && <p className="mb-3 px-1 text-sm font-medium">Fill in before publishing (English): {missing.join(", ")}</p>}
 
       <p className="mb-3 px-1 text-xs text-neutral-500">
         {lang === "ar" ? "Translate the text here. An empty field shows the English text on the Arabic page; codes, numbers and media are shared. " : ""}
