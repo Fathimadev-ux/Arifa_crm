@@ -6,6 +6,7 @@ import { can } from "@/config/roles";
 import { isClosedStage } from "@/config/stages";
 import type { DealStage } from "@/lib/api/client";
 import { useProducts } from "@/lib/api/catalogue";
+import { useRequestsByDeal } from "@/lib/api/change-requests";
 import { type Deal, type DealFilters, hasAcceptedQuote, moveDeal, useFilteredDeals } from "@/lib/api/crm";
 import { EMPTY_FILTERS, type PipelineFilters, applyFilters, moveBlockedReason } from "@/lib/pipeline-cards";
 import { useStaffNames } from "@/hooks/useStaffNames";
@@ -44,6 +45,7 @@ export function PipelineScreen() {
   const canFilterByOwner = can(role, "SEE_ALL_DEALS");
   const filters = canFilterByOwner ? savedFilters : { ...savedFilters, ownerId: "" };
   const { data: deals, error } = useFilteredDeals(toDealFilters(serverFilters, filters.ownerId));
+  const requestsByDeal = useRequestsByDeal();
 
   if (error && !deals) return <ErrorState message={error.message} />;
   if (!deals) return <LoadingState />;
@@ -100,7 +102,7 @@ export function PipelineScreen() {
           )}
         </div>
       ) : view === "BOARD" ? (
-        <KanbanBoard deals={visibleDeals} ownerName={nameOf} onMove={handleMove} />
+        <KanbanBoard deals={visibleDeals} ownerName={nameOf} requestsByDeal={requestsByDeal} onMove={handleMove} />
       ) : (
         <PipelineTable deals={visibleDeals} ownerName={nameOf} />
       )}

@@ -113,7 +113,8 @@ export const ADMIN_ROUTES: [string, RegExp, Handler][] = [
     const optedOut = getState().deals.filter((deal) => deal.opted_out_at);
     return json({
       period_from: from, period_to: to,
-      salespeople: getRecords().staff.filter((member) => member.role === "sales").map((member) => salespersonBoard(member, from, to)),
+      // The manager handles deals too, so their own row is in the list (the "My open deals" box reads it).
+      salespeople: getRecords().staff.filter((member) => member.role === "sales" || member.role === "manager").map((member) => salespersonBoard(member, from, to)),
       below_minimum_requests: allRequests.filter((request) => request.ai_notes?.includes("below the minimum")).length,
       change_requests_by_type: countBy(allRequests, (request) => request.type),
       sla_breaches: changeRequestsFor("open", null).filter((request) => new Date(request.sla_due_at).getTime() < Date.now()).length,

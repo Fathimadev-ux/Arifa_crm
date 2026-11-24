@@ -72,8 +72,9 @@ const FX_COLUMNS: Column<{ currency: string; rate_to_aed: string; as_of: string;
 
 /** Material rates waiting for the manager, how fresh each approved rate is, and the currency rates quotes use. */
 export function PricesSettings({ canDecide, canSeeFx }: { canDecide: boolean; canSeeFx: boolean }) {
-  const { data: proposals } = usePriceProposals(true);
-  const { data: freshness } = useMaterialFreshness(true);
+  // Manager / MD only (CRM_API.md): loaded only for a role that may decide material prices.
+  const { data: proposals } = usePriceProposals(canDecide);
+  const { data: freshness } = useMaterialFreshness(canDecide);
   const { data: fxRates } = useFxRates(canSeeFx);
   const [isSettingFx, setIsSettingFx] = useState(false);
 

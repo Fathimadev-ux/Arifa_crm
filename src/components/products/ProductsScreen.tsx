@@ -13,7 +13,7 @@ import { ChangeHistory } from "@/components/products/ChangeHistory";
 import { ProductPanel } from "@/components/products/ProductPanel";
 import { ProductWorkbook } from "@/components/products/ProductWorkbook";
 import { ErpImport } from "@/components/products/ErpImport";
-import { Button, ErrorState, LoadingState, PageHeader, Section } from "@/components/ui";
+import { Button, ErrorState, LoadingState, PageHeader } from "@/components/ui";
 
 const columns: Column<Product>[] = [
   { label: "Product", cell: (product) => product.name, sub: (product) => [product.sku, product.custom_printing && "custom printing"].filter(Boolean).join(" · "), width: "30%" },
@@ -24,22 +24,64 @@ const columns: Column<Product>[] = [
   { label: "Website", cell: (product) => (product.cms_published ? "Published" : "Hidden"), width: "12%" },
 ];
 
-/** The §10 import answer: how many rows were saved, or the rows to fix (nothing is saved when any row fails). */
-function ImportResultNote({ result, onClose }: { result: ImportResult; onClose: () => void }) {
+/**
+ * §5 / §10 the price list as Excel, like the product workbook: download it, change prices, upload it. Every row is
+ * checked first; any error saves nothing and the rows to fix are listed. Uploading is for those who edit prices.
+ */
+function PriceListPanel({ canImport, onClose }: { canImport: boolean; onClose: () => void }) {
+  const fileInput = useRef<HTMLInputElement>(null);
+  const [result, setResult] = useState<ImportResult | null>(null);
+  const [isBusy, setIsBusy] = useState(false);
+
+  const upload = async (file: File | undefined) => {
+    if (fileInput.current) fileInput.current.value = "";
+    if (!file) return;
+    setIsBusy(true);
+    setResult(null);
+    setResult((await importPriceList(file)) ?? null);
+    setIsBusy(false);
+  };
+
   return (
-    <div className="animate-enter panel mb-4 space-y-2 p-5 text-sm">
-      <div className="flex items-center justify-between gap-3">
-        <p className="font-semibold">{result.errors.length ? `Nothing saved: ${result.errors.length} rows to fix` : `${result.saved} rows saved`}</p>
+    <section className="animate-enter panel space-y-5 p-5 md:p-6">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="text-lg font-medium tracking-tight">Price list</h2>
+          <p className="text-xs text-neutral-500">Columns: sku, min_qty, max_qty, list_price, min_price, currency. Every row is checked first: one error saves nothing.</p>
+        </div>
         <button onClick={onClose} className="press rounded-full px-3 py-1.5 text-xs text-neutral-500 hover:bg-black/5 hover:text-black">
           Close
         </button>
       </div>
-      {result.errors.map((error) => (
-        <p key={`${error.row}-${error.field}`} className="text-neutral-600">
-          Row {error.row} · {error.field}: {error.error}
-        </p>
-      ))}
-    </div>
+
+      <div className="flex flex-wrap gap-2">
+        <Button variant="secondary" onClick={() => void exportPriceList()}>
+          <FileDown className="size-4" /> 1. Download price list
+        </Button>
+        {canImport && (
+          <>
+            <input ref={fileInput} type="file" accept=".xlsx" hidden onChange={(event) => void upload(event.target.files?.[0])} />
+            <Button disabled={isBusy} onClick={() => fileInput.current?.click()}>
+              <FileUp className="size-4" /> {isBusy ? "Checking…" : "2. Upload price list"}
+            </Button>
+          </>
+        )}
+      </div>
+
+      {result &&
+        (result.errors.length ? (
+          <div className="animate-enter space-y-1 rounded-3xl border border-neutral-200 p-5 text-sm">
+            <p className="font-semibold">Nothing saved: {result.errors.length} rows to fix</p>
+            {result.errors.map((error) => (
+              <p key={`${error.row}-${error.field}`} className="text-neutral-600">
+                Row {error.row} · {error.field}: {error.error}
+              </p>
+            ))}
+          </div>
+        ) : (
+          <div className="animate-enter rounded-3xl bg-black p-5 text-sm text-white">Saved: {result.saved} rows.</div>
+        ))}
+    </section>
   );
 }
 
@@ -56,8 +98,7 @@ export function ProductsScreen() {
   const [search, setSearch] = useState("");
   const [openId, setOpenId] = useState<string | null>(null);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
-  const [importResult, setImportResult] = useState<ImportResult | null>(null);
-  const fileInput = useRef<HTMLInputElement>(null);
+  const [isPriceListOpen, setIsPriceListOpen] = useState(false);
   const { data: history } = usePriceListHistory();
   const canEditPrices = can(role, "EDIT_PRICES");
   const canUseWorkbook = can(role, "USE_WORKBOOK");
@@ -67,13 +108,6 @@ export function ProductsScreen() {
   const needle = search.trim().toLowerCase();
   const visible = products?.filter((product) => !needle || `${product.name} ${product.sku} ${product.category_code}`.toLowerCase().includes(needle)) ?? [];
   const openProduct = products?.find((product) => product.id === openId);
-
-  const upload = async (file: File | undefined) => {
-    if (!file) return;
-    const result = await importPriceList(file);
-    if (result) setImportResult(result);
-    if (fileInput.current) fileInput.current.value = "";
-  };
 
   return (
     <>
@@ -103,7 +137,7 @@ export function ProductsScreen() {
           <Button variant="secondary" onClick={() => setIsHistoryOpen((open) => !open)}>
             <History className="size-4" /> Price changes
           </Button>
-          <Button variant="secondary" onClick={() => void exportPriceList()}>
+          <Button variant="secondary" onClick={() => setIsPriceListOpen((open) => !open)}>
             <FileDown className="size-4" /> Price list
           </Button>
           {canUseWorkbook && (
@@ -113,14 +147,6 @@ export function ProductsScreen() {
               </Button>
               <Button variant="secondary" onClick={() => setIsErpOpen((open) => !open)}>
                 <Boxes className="size-4" /> ERP import
-              </Button>
-            </>
-          )}
-          {canEditPrices && (
-            <>
-              <input ref={fileInput} type="file" accept=".xlsx" hidden onChange={(event) => void upload(event.target.files?.[0])} />
-              <Button onClick={() => fileInput.current?.click()}>
-                <FileUp className="size-4" /> Import Excel
               </Button>
             </>
           )}
@@ -137,12 +163,21 @@ export function ProductsScreen() {
           <ProductWorkbook onClose={() => setIsWorkbookOpen(false)} />
         </div>
       )}
-      {importResult && <ImportResultNote result={importResult} onClose={() => setImportResult(null)} />}
-      {isHistoryOpen && (
+      {isPriceListOpen && (
         <div className="mb-4">
-          <Section title="Price list changes">
-            <ChangeHistory changes={history} nameOf={(id) => nameOf(id)} />
-          </Section>
+          <PriceListPanel canImport={canEditPrices} onClose={() => setIsPriceListOpen(false)} />
+        </div>
+      )}
+      {isHistoryOpen && (
+        <div className="animate-enter mb-4 space-y-3">
+          {/* The table has its own frame, so just a heading above it (no box in a box). */}
+          <div className="flex items-center justify-between px-1">
+            <h2 className="text-lg font-medium tracking-tight">Price list changes</h2>
+            <button onClick={() => setIsHistoryOpen(false)} className="press rounded-full px-3 py-1.5 text-xs text-neutral-500 hover:bg-black/5 hover:text-black">
+              Close
+            </button>
+          </div>
+          <ChangeHistory changes={history} nameOf={(id) => nameOf(id)} />
         </div>
       )}
       {openProduct && (

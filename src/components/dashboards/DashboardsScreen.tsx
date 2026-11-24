@@ -1,6 +1,6 @@
 "use client";
 
-import { AlarmClock, BadgeCheck, BotOff, Clock, FileClock, Inbox, ListTodo, Percent, Send, ShieldAlert, Tag, Trophy, Wallet } from "lucide-react";
+import { AlarmClock, BadgeCheck, BotOff, Briefcase, Clock, FileClock, Inbox, ListTodo, Percent, Send, ShieldAlert, Tag, Trophy, Wallet } from "lucide-react";
 import { useState } from "react";
 import { can } from "@/config/roles";
 import { STAGES } from "@/config/stages";
@@ -50,11 +50,26 @@ const SALES_COLUMNS: Column<SalespersonBoard>[] = [
   { label: "Won", cell: (row) => row.deals_won, width: "14%", alignRight: true },
 ];
 
+/** The manager's own open deals: their row in the manager board's salespeople list (matched by user id), summed. */
+function MyDealsCard({ board }: { board: ManagerBoard }) {
+  const { user } = useSession();
+  const myRow = board.salespeople.find((row) => row.user_id === user?.id);
+  const myOpenDeals = myRow ? Object.values(myRow.open_deals_by_stage).reduce((sum, count) => sum + count, 0) : 0;
+  return <StatCard index={0} icon={Briefcase} label="My open deals" value={myOpenDeals} />;
+}
+
 function ManagerSection({ board }: { board: ManagerBoard }) {
+  const { role } = useSession();
   const { data: summary } = useDashboardSummary(true);
   return (
     <>
       <h2 className="pt-4 text-2xl font-light tracking-tight">Team</h2>
+      {/* Manager only (not the MD): the deals the manager handles personally, from /v1/dashboards/manager. */}
+      {role === "manager" && (
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <MyDealsCard board={board} />
+        </div>
+      )}
       {summary && (
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
           <StatCard index={1} icon={Wallet} label="Open pipeline" value={aed(Number(summary.open_pipeline_aed))} />

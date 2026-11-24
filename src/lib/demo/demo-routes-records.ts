@@ -104,14 +104,15 @@ export const RECORD_ROUTES: [string, RegExp, Handler][] = [
     const patch = Object.fromEntries(Object.entries(body).filter(([, value]) => value !== null && value !== undefined));
     const [before, after] = diff(product, patch);
     Object.assign(product, patch);
-    logChange("product_updated", "product", id, before, after);
+    logChange("product.updated", "product", id, before, after);
     return json(product);
   }],
   ["GET", /^\/v1\/products\/([^/]+)\/price-tiers$/, ([id]) => json(getRecords().tiers.filter((tier) => tier.product_id === id).sort((a, b) => Number(a.min_qty) - Number(b.min_qty)))],
   ["POST", /^\/v1\/products\/([^/]+)\/price-tiers$/, ([id], body) => {
     const tier = { id: newId(), product_id: id, min_qty: String(body.min_qty), max_qty: body.max_qty ? String(body.max_qty) : null, list_price: Number(body.list_price).toFixed(2), min_price: body.min_price ? Number(body.min_price).toFixed(2) : null, currency: "INR", valid_from: nowIso() };
     getRecords().tiers.push(tier);
-    logChange("price_tier_added", "price_tier", tier.id, null, { min_qty: tier.min_qty, list_price: tier.list_price, min_price: tier.min_price });
+    // Like the backend's log: the product, the quantities, the prices and the start date.
+    logChange("price_tier.created", "price_tier", tier.id, null, { product_id: tier.product_id, source: "manual", min_qty: tier.min_qty, max_qty: tier.max_qty, list_price: tier.list_price, min_price: tier.min_price, valid_from: nowIso() });
     return json(tier, 201);
   }],
   ["PATCH", /^\/v1\/price-tiers\/([^/]+)$/, withTier((tier, body) => {
@@ -121,19 +122,19 @@ export const RECORD_ROUTES: [string, RegExp, Handler][] = [
     }
     const [before, after] = diff(tier, patch);
     Object.assign(tier, patch);
-    logChange("price_tier_updated", "price_tier", tier.id, before, after);
+    logChange("price_tier.updated", "price_tier", tier.id, before, after);
     return json(tier);
   })],
   ["DELETE", /^\/v1\/price-tiers\/([^/]+)$/, withTier((tier) => {
     getRecords().tiers = getRecords().tiers.filter((item) => item.id !== tier.id);
-    logChange("price_tier_removed", "price_tier", tier.id, { min_qty: tier.min_qty, list_price: tier.list_price }, null);
+    logChange("price_tier.deleted", "price_tier", tier.id, { product_id: tier.product_id, min_qty: tier.min_qty, max_qty: tier.max_qty, list_price: tier.list_price, min_price: tier.min_price }, null);
     return new Response(null, { status: 204 });
   })],
   ["GET", /^\/v1\/products\/([^/]+)\/history$/, ([id]) => {
     const tierIds = new Set(getRecords().tiers.filter((tier) => tier.product_id === id).map((tier) => tier.id));
     return json(getRecords().changes.filter((change) => change.entity_id === id || tierIds.has(change.entity_id)));
   }],
-  ["GET", /^\/v1\/price-list\/history$/, () => json(getRecords().changes.filter((change) => change.entity_type === "price_tier" || change.entity_type === "price_list"))],
+  ["GET", /^\/v1\/price-list\/history$/, () => json(getRecords().changes.filter((change) => ["price_tier", "price_list", "catalogue"].includes(change.entity_type)))],
   ["GET", /^\/v1\/price-list\/export$/, () => csv("price-list", tierRows())],
   ["POST", /^\/v1\/price-list\/import$/, () => json({ saved: 0, errors: [{ row: 0, field: "file", error: "Sample data can't read Excel files. This works once the backend is connected." }] })],
 

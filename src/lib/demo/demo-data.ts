@@ -82,7 +82,7 @@ interface DealSeed {
 const SEEDS: DealSeed[] = [
   { number: 1001, company: "Sri Balaji Caterers", contact: "Ramesh Kumar", phone: "+919841022341", channel: "whatsapp", city: "Chennai", product: "450ml Foil Container", quantity: 20000, stage: "NEW", owner: "Divya", createdDaysAgo: 0, nextInHours: 2,
     history: [["ai", "Started chat on the website"], ["ai", "Matched the 450ml foil container"]] },
-  { number: 1002, company: "Green Leaf Restaurants", contact: "Priya Nair", phone: "+919986011872", channel: "email", city: "Bengaluru", product: "660ml Foil Container", quantity: 15000, stage: "NEW", owner: "Arun", createdDaysAgo: 1, nextInHours: 5,
+  { number: 1002, company: "Green Leaf Restaurants", contact: "Priya Nair", phone: "+919986011872", channel: "email", city: "Bengaluru", product: "660ml Foil Container", quantity: 15000, stage: "NEW", owner: "Suresh", createdDaysAgo: 1, nextInHours: 5,
     history: [["ai", "Enquiry received by email"]] },
   { number: 1003, company: "Madurai Mess Foods", contact: "Selvam P", phone: "+919443376120", channel: "whatsapp", city: "Madurai", product: "500ml Rectangular Container", quantity: 30000, stage: "QUALIFIED", owner: "Meena", createdDaysAgo: 2, nextInHours: 20,
     history: [["ai", "Started chat on the website"], ["ai", "Qualified: score 82"]] },

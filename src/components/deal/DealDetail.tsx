@@ -3,7 +3,7 @@
 import { ArrowLeft, CalendarDays, Clock, Package, UserRound } from "lucide-react";
 import Link from "next/link";
 import { lostReasonLabel } from "@/config/stages";
-import { useChangeRequests } from "@/lib/api/change-requests";
+import { requestedChangesOf, useChangeRequests } from "@/lib/api/change-requests";
 import { type DealDetail as Deal, useDeal } from "@/lib/api/crm";
 import { channelLabel, formatCount, formatDate, formatRelative, humanize } from "@/lib/format";
 import { useNow } from "@/hooks/useNow";
@@ -31,16 +31,28 @@ function DealRequests({ dealId }: { dealId: string }) {
 }
 
 function Requirements({ deal }: { deal: Deal }) {
+  // While an open request asks for another quantity, it shows next to Quantity (the requirement changes once the
+  // revised quote is approved, on the backend).
+  const { data: openRequests } = useChangeRequests("open", deal.id);
+  const requestedQuantity = openRequests?.map((request) => requestedChangesOf(request).quantity).find(Boolean);
   if (deal.requirements.length === 0) return null;
   return (
     <Section title="Requirement" index={5}>
       <ul className="space-y-4">
-        {deal.requirements.map((requirement) => (
+        {deal.requirements.map((requirement, index) => (
           <li key={requirement.id}>
             <DetailList
               items={[
                 ["Product", requirement.product_text],
-                ["Quantity", requirement.quantity && `${formatCount(requirement.quantity)} ${requirement.unit}`],
+                [
+                  "Quantity",
+                  requirement.quantity && (
+                    <span key="quantity" className="flex flex-wrap items-center gap-2">
+                      {formatCount(requirement.quantity)} {requirement.unit}
+                      {index === 0 && requestedQuantity && <span className="rounded-full bg-black px-2.5 py-0.5 text-[11px] font-medium text-white">Change requested: {requestedQuantity.requested}</span>}
+                    </span>
+                  ),
+                ],
                 ["Deliver to", [requirement.delivery_city, requirement.delivery_country].filter(Boolean).join(", ")],
                 ["Needed by", requirement.needed_by && formatDate(requirement.needed_by)],
               ]}

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ROLE_LABEL, type Role, can } from "@/config/roles";
 import { isClosedStage } from "@/config/stages";
 import { type Approval, type DealDetail, type QuoteDecision, type QuoteVersion, decideApproval, findOpenApproval, requestQuote, useDecidedApprovals, useInbox, useOpenApprovals, useQuotes } from "@/lib/api/crm";
+import { reviseForRequest, revisePrefillOf, useChangeRequests } from "@/lib/api/change-requests";
 import { reviseQuote } from "@/lib/api/deal-work";
 import { formatCount, formatDate, formatDateTime, formatMoney, formatRelative, humanize } from "@/lib/format";
 import { useNow } from "@/hooks/useNow";
@@ -140,6 +141,10 @@ export function QuotePanel({ deal }: { deal: DealDetail }) {
   const { data: inbox } = useInbox();
   const [mode, setMode] = useState<Mode>("VIEW");
   const [compareId, setCompareId] = useState<string | null>(null);
+  // With an open request, Revise answers it (so approving the revision closes the request); with several, pick one.
+  const { data: openRequests } = useChangeRequests("open", deal.id);
+  const [answeredRequestId, setAnsweredRequestId] = useState<string | null>(null);
+  const answeredRequest = openRequests?.find((request) => request.id === answeredRequestId) ?? openRequests?.[0];
   const canQuote = !isClosedStage(deal.stage);
   const requirement = deal.requirements[0];
   const manualForm = (
@@ -242,8 +247,29 @@ export function QuotePanel({ deal }: { deal: DealDetail }) {
         </div>
       )}
       {mode === "REVISE" && (
-        <div className="mt-5">
-          <QuoteEditForm version={currentQuote} title={`Revise version ${currentQuote.version_no}`} onSubmit={(edits) => reviseQuote(deal.id, edits)} onCancel={() => setMode("VIEW")} />
+        <div className="mt-5 space-y-3">
+          {openRequests && openRequests.length > 1 && (
+            <label className="block text-sm">
+              <span className="mb-1.5 block px-1 text-xs text-neutral-500">Which request does this revision answer?</span>
+              <select value={answeredRequest?.id ?? ""} onChange={(event) => setAnsweredRequestId(event.target.value)} className="glass h-10 w-full rounded-full px-4 text-sm shadow-sm outline-none">
+                {openRequests.map((request) => (
+                  <option key={request.id} value={request.id}>
+                    {humanize(request.type)}: “{request.buyer_text_en ?? request.buyer_text}”
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+          {openRequests?.length === 1 && answeredRequest && <p className="px-1 text-xs text-neutral-500">This revision answers the open request ({humanize(answeredRequest.type).toLowerCase()}): approving it closes the request.</p>}
+          {/* Keyed by the request it answers: picking another request starts the form from that request's values. */}
+          <QuoteEditForm
+            key={answeredRequest?.id ?? "none"}
+            version={currentQuote}
+            title={`Revise version ${currentQuote.version_no}`}
+            prefill={revisePrefillOf(answeredRequest)}
+            onSubmit={(edits) => (answeredRequest ? reviseForRequest(answeredRequest, edits) : reviseQuote(deal.id, edits))}
+            onCancel={() => setMode("VIEW")}
+          />
         </div>
       )}
       {mode === "MANUAL" && <div className="mt-5">{manualForm}</div>}

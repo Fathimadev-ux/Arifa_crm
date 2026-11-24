@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { STAGES } from "@/config/stages";
 import type { DealStage } from "@/lib/api/client";
+import type { DealRequests } from "@/lib/api/change-requests";
 import { type Deal, hasAcceptedQuote } from "@/lib/api/crm";
 import { quickMoveStageOf } from "@/lib/pipeline-cards";
 import { DealCard } from "@/components/pipeline/DealCard";
@@ -10,10 +11,11 @@ import { DealCard } from "@/components/pipeline/DealCard";
 interface KanbanBoardProps {
   deals: Deal[];
   ownerName: (id: string | null) => string;
+  requestsByDeal: Map<string, DealRequests>;
   onMove: (deal: Deal, targetStage: DealStage) => void;
 }
 
-export function KanbanBoard({ deals, ownerName, onMove }: KanbanBoardProps) {
+export function KanbanBoard({ deals, ownerName, requestsByDeal, onMove }: KanbanBoardProps) {
   const [draggedDeal, setDraggedDeal] = useState<Deal | null>(null);
   const [hoveredStage, setHoveredStage] = useState<DealStage | null>(null);
   // A card in Quotation whose quote the customer accepted goes to Ready to close, so that column is the one to mark.
@@ -70,6 +72,7 @@ export function KanbanBoard({ deals, ownerName, onMove }: KanbanBoardProps) {
                     key={deal.id}
                     deal={deal}
                     ownerName={ownerName(deal.owner_user_id)}
+                    requests={requestsByDeal.get(deal.id)}
                     index={stageIndex + dealIndex}
                     isDragging={draggedDeal?.id === deal.id}
                     quickMoveStage={quickMoveStage}

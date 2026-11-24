@@ -53,6 +53,9 @@ function withRequest(handle: (request: ChangeRequest, deal: DealDetail, body: Bo
   };
 }
 
+/** Which change request each revision answers (made with "Revise quote" on the request): approving it closes the request. */
+const requestOfRevision = new Map<string, string>();
+
 /** A new version from the edits to `previous` (a deal revision or a change request's). */
 function revise(deal: DealDetail, previousId: string | null, edits: Body, summary: string) {
   const previous = (previousId && findVersion(previousId)) || getState().quotes[deal.id][0];
@@ -211,6 +214,12 @@ const QUOTE_ROUTES: [string, RegExp, Handler][] = [
     version.status = { approve: "sent", reject: "rejected", correct: "correction_requested" }[decision];
     changeDeal(deal, {}, `${{ approve: "Approved", reject: "Rejected", correct: "Asked for a correction on" }[decision]} quote v${version.version_no}${body.note ? `: ${body.note}` : ""}`);
     if (decision === "approve") changeDeal(deal, { next_action_at: new Date(Date.now() + 48 * HOUR).toISOString() }, `Sent quote v${version.version_no} to the buyer`, "ai");
+    // Like the backend (resolve_for_version): the request this revision answers closes by itself.
+    const answered = getState().changeRequests.find((request) => request.id === requestOfRevision.get(version.id) && ["open", "in_progress"].includes(request.status));
+    if (decision === "approve" && answered) {
+      Object.assign(answered, { status: "resolved", resolved_version_id: version.id, closed_at: nowIso() });
+      changeDeal(deal, {}, `Request resolved automatically by quote v${version.version_no}`);
+    }
     if (decision === "correct") changeDeal(deal, {}, `Built quote v${addQuoteVersion(deal).version_no}, waiting for approval`, "ai");
     return json(approval);
   }],
@@ -218,14 +227,18 @@ const QUOTE_ROUTES: [string, RegExp, Handler][] = [
 
 const REQUEST_ROUTES: [string, RegExp, Handler][] = [
   ["GET", /^\/v1\/change-requests$/, (_, __, query) => json(changeRequestsFor(query.get("status") ?? "open", query.get("deal_id")))],
-  ["POST", /^\/v1\/change-requests\/([^/]+)\/revise$/, withRequest((request, deal, body) => revise(deal, request.quote_version_id, body, "Revised the quote for the change request"))],
+  ["POST", /^\/v1\/change-requests\/([^/]+)\/revise$/, withRequest((request, deal, body) => {
+    const answer = revise(deal, request.quote_version_id, body, "Revised the quote for the change request");
+    if (answer.status === 201) requestOfRevision.set(getState().quotes[deal.id][0].id, request.id);
+    return answer;
+  })],
   ["POST", /^\/v1\/change-requests\/([^/]+)\/resolve$/, withRequest((request, deal, body) => {
-    Object.assign(request, { status: "resolved", resolved_version_id: String(body.version_id) });
+    Object.assign(request, { status: "resolved", resolved_version_id: String(body.version_id), closed_at: nowIso() });
     changeDeal(deal, {}, "Resolved the change request");
     return json(request);
   })],
   ["POST", /^\/v1\/change-requests\/([^/]+)\/decline$/, withRequest((request, deal, body) => {
-    Object.assign(request, { status: "declined", decline_reason: String(body.reason) });
+    Object.assign(request, { status: "declined", decline_reason: String(body.reason), closed_at: nowIso() });
     changeDeal(deal, {}, `Declined the change request: ${body.reason}`);
     return json(request);
   })],

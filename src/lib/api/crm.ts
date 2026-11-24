@@ -180,6 +180,7 @@ export function decideApproval(approvalId: string, dealId: string, decision: Quo
   return runAction(
     async () => unwrap(await api.POST("/v1/approvals/{approval_id}/decision", { params: { path: { approval_id: approvalId } }, body: { decision, note: note || null } })),
     DECISION_MESSAGE[decision],
-    [...afterDealChange(dealId), "approvals"],
+    // Approving a request's revision closes the request on the backend, so the request lists reload too.
+    [...afterDealChange(dealId), "approvals", "requests"],
   );
 }

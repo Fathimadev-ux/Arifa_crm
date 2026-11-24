@@ -91,9 +91,14 @@ export function createRecordsState(now: number): RecordsState {
   });
 
   const managerId = DEMO_STAFF.find((member) => member.role === "manager")!.id;
+  // Shaped like the backend's log (the team's screenshot): a workbook upload, the tiers it created, a price change.
+  const firstProductId = records.products[0]?.id ?? id("p", 1);
   records.changes.push(
-    { at: toIso(now - 3 * DAY), actor_type: "staff", actor_id: managerId, action: "price_tier_updated", entity_type: "price_tier", entity_id: id("t", 2), before: { list_price: "9.10" }, after: { list_price: "9.20" } },
-    { at: toIso(now - 6 * DAY), actor_type: "staff", actor_id: managerId, action: "product_updated", entity_type: "product", entity_id: id("p", 4), before: { moq: 2000 }, after: { moq: 5000 } },
+    { at: toIso(now - 1 * DAY), actor_type: "staff", actor_id: managerId, action: "catalogue.workbook_applied", entity_type: "catalogue", entity_id: id("w", 1), before: null, after: { sha256: "196375f6a21260560ebdfc6cd2f7da42", website_drafts: 1, products_created: 0, products_updated: 1, categories_changed: 0, price_lists_changed: 1 } },
+    { at: toIso(now - 1 * DAY), actor_type: "staff", actor_id: managerId, action: "price_tier.created", entity_type: "price_tier", entity_id: id("t", 90), before: null, after: { product_id: firstProductId, source: "workbook", min_qty: "5000", max_qty: "19999", list_price: "0.68", min_price: "0.58", valid_from: toIso(now - 1 * DAY) } },
+    { at: toIso(now - 2 * DAY), actor_type: "staff", actor_id: managerId, action: "price_list.imported", entity_type: "price_list", entity_id: id("w", 2), before: null, after: { rows: 5, products: ["AP-PP-750R", "AP-PP-500S"], valid_from: toIso(now - 2 * DAY) } },
+    { at: toIso(now - 3 * DAY), actor_type: "staff", actor_id: managerId, action: "price_tier.updated", entity_type: "price_tier", entity_id: id("t", 2), before: { product_id: firstProductId, list_price: "9.10" }, after: { product_id: firstProductId, list_price: "9.20" } },
+    { at: toIso(now - 6 * DAY), actor_type: "staff", actor_id: managerId, action: "product.updated", entity_type: "product", entity_id: id("p", 4), before: { moq: 2000 }, after: { moq: 5000 } },
   );
 
   records.stock.push(

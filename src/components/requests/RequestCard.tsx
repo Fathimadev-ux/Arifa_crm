@@ -2,15 +2,21 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { type ChangeRequest, declineRequest, resolveRequest, reviseForRequest } from "@/lib/api/change-requests";
+import { type ChangeRequest, declineRequest, requestedChangesOf, resolveRequest, reviseForRequest, revisePrefillOf } from "@/lib/api/change-requests";
+import { type QuoteVersion, useQuotes } from "@/lib/api/crm";
 import { useQuoteVersion } from "@/lib/api/deal-work";
-import { humanize } from "@/lib/format";
+import { formatCount, formatDateTime, formatMoney, humanize } from "@/lib/format";
 import { useStaffNames } from "@/hooks/useStaffNames";
 import { FormCard, TextArea } from "@/components/forms";
 import { QuoteEditForm } from "@/components/quote/QuoteEditForm";
-import { Button, enterDelay } from "@/components/ui";
+import { Button, DetailList, enterDelay } from "@/components/ui";
+
+type QuoteLine = QuoteVersion["lines"][number];
 
 const CLOSED_STATUSES = ["resolved", "declined", "closed"];
+/** A revision the backend accepts for Resolve ("an approved and sent version of this deal"). */
+const LIVE_STATUSES = ["approved", "sent"];
+const WAITING_STATUS = "pending_approval";
 
 /** One requested change as "field: current → requested". The backend sends each as a small object. */
 function describeField(field: Record<string, unknown>): { label: string; change: string } {
@@ -22,6 +28,36 @@ function describeField(field: Record<string, unknown>): { label: string; change:
   return { label: humanize(label), change: rest.map(([key, value]) => `${humanize(key)}: ${String(value)}`).join(" · ") };
 }
 
+/**
+ * Issue 4: what a resolved request ended with, from the quote version that resolved it (resolved_version_id):
+ * quantity, unit price, total, delivery, the version (linked to the deal) and when it closed (closed_at, once sent).
+ */
+function RequestResult({ request }: { request: ChangeRequest }) {
+  const { data: version } = useQuoteVersion(request.resolved_version_id);
+  if (!version) return <div className="h-24 animate-pulse rounded-2xl bg-neutral-100" />;
+  const perLine = (value: (line: QuoteLine) => string) => version.lines.map(value).join(" · ");
+  return (
+    <div className="rounded-2xl border border-neutral-200 p-4">
+      <p className="mb-3 text-xs font-semibold tracking-wide text-neutral-500 uppercase">Result</p>
+      <DetailList
+        items={[
+          ["Quantity", perLine((line) => `${formatCount(line.quantity)} ${line.unit}`)],
+          ["Unit price", perLine((line) => formatMoney(line.unit_price, version.currency))],
+          ["Total", formatMoney(version.total, version.currency)],
+          ["Delivery", [version.delivery_time_text, version.delivery_place].filter(Boolean).join(" · ")],
+          [
+            "Quote",
+            <Link key="quote" href={`/deals/${request.deal_id}`} className="underline hover:no-underline">
+              Version {version.version_no}
+            </Link>,
+          ],
+          ["Closed on", request.closed_at && formatDateTime(request.closed_at)],
+        ]}
+      />
+    </div>
+  );
+}
+
 type Mode = "VIEW" | "REVISE" | "DECLINE";
 
 /** The §13.2 card: the buyer's words, what changes, and the actions (revise, decline, resolve). */
@@ -29,11 +65,21 @@ export function RequestCard({ request, dealNumber, index = 0 }: { request: Chang
   const { nameOf } = useStaffNames();
   const [mode, setMode] = useState<Mode>("VIEW");
   const [reason, setReason] = useState("");
-  const [revisedVersionId, setRevisedVersionId] = useState<string | null>(null);
   const { data: quoteVersion } = useQuoteVersion(mode === "REVISE" ? request.quote_version_id : null);
+  const { data: quotes } = useQuotes(request.deal_id);
 
   const isOpen = !CLOSED_STATUSES.includes(request.status);
-  const resolveVersionId = revisedVersionId ?? request.resolved_version_id ?? request.quote_version_id;
+  // The revision answering this request: a version newer than the one the buyer asked about. Approving a revision
+  // made from this card closes the request by itself; Resolve is only the backup for an approved one that didn't.
+  const askedAbout = quotes?.find((quote) => quote.id === request.quote_version_id);
+  const newest = quotes?.[0];
+  const revision = askedAbout && newest && newest.version_no > askedAbout.version_no ? newest : null;
+  const canResolve = revision !== null && LIVE_STATUSES.includes(revision.status);
+  const isWaitingForApproval = revision?.status === WAITING_STATUS;
+  const hasResult = request.status === "resolved" && request.resolved_version_id !== null;
+  const requestedQuantity = requestedChangesOf(request).quantity;
+  // The quantity has its own row above; the other asked changes stay as "field: current → requested".
+  const otherFields = requestedQuantity ? request.fields.filter((field) => !/quantity|qty/i.test(String(field.field ?? field.name ?? ""))) : request.fields;
 
   return (
     <article className="animate-enter lift panel space-y-4 p-5" style={enterDelay(index)}>
@@ -52,14 +98,22 @@ export function RequestCard({ request, dealNumber, index = 0 }: { request: Chang
         </div>
       </header>
 
+      {/* The new quantity, on its own row so it isn't missed (issue 1). */}
+      {requestedQuantity && (
+        <p className="rounded-2xl border border-black px-4 py-3 text-sm">
+          <span className="font-semibold">Requested quantity: {requestedQuantity.requested}</span>
+          {requestedQuantity.current && <span className="text-neutral-500"> (was {requestedQuantity.current})</span>}
+        </p>
+      )}
+
       <blockquote className="rounded-2xl bg-black/[0.03] px-4 py-3 text-sm">
         “{request.buyer_text}”
         {request.buyer_text_en && request.buyer_text_en !== request.buyer_text && <p className="mt-1.5 text-xs text-neutral-500">{request.buyer_text_en}</p>}
       </blockquote>
 
-      {request.fields.length > 0 && (
+      {otherFields.length > 0 && (
         <dl className="space-y-1.5">
-          {request.fields.map((field, fieldIndex) => {
+          {otherFields.map((field, fieldIndex) => {
             const { label, change } = describeField(field);
             return (
               <div key={fieldIndex} className="flex flex-wrap justify-between gap-x-4 text-sm">
@@ -74,7 +128,14 @@ export function RequestCard({ request, dealNumber, index = 0 }: { request: Chang
       {request.ai_notes && <p className="text-xs text-neutral-500">AI: {request.ai_notes}</p>}
       {request.assigned_to && <p className="text-xs text-neutral-500">Handled by {nameOf(request.assigned_to)}</p>}
       {request.decline_reason && <p className="text-sm">Declined: {request.decline_reason}</p>}
+      {/* Shown as soon as the backend sends closed_at (being added to ChangeRequestOut). */}
+      {hasResult && <RequestResult request={request} />}
+      {/* Declined (or closed without a quote): the reason above, and the close date once the backend sends closed_at. */}
+      {!isOpen && !hasResult && request.closed_at && <p className="text-xs text-neutral-500">Closed on {formatDateTime(request.closed_at)}</p>}
 
+      {isOpen && mode === "VIEW" && isWaitingForApproval && revision && (
+        <p className="text-sm font-medium">Revision v{revision.version_no} waiting for approval. Approving it closes this request.</p>
+      )}
       {isOpen && mode === "VIEW" && (
         <div className="flex flex-wrap gap-2">
           {request.quote_version_id && (
@@ -85,7 +146,7 @@ export function RequestCard({ request, dealNumber, index = 0 }: { request: Chang
           <Button variant="secondary" onClick={() => setMode("DECLINE")}>
             Decline
           </Button>
-          {resolveVersionId && <Button onClick={() => void resolveRequest(request, resolveVersionId)}>Resolve</Button>}
+          {canResolve && revision && <Button onClick={() => void resolveRequest(request, revision.id)}>Resolve with v{revision.version_no}</Button>}
         </div>
       )}
 
@@ -94,11 +155,8 @@ export function RequestCard({ request, dealNumber, index = 0 }: { request: Chang
           <QuoteEditForm
             version={quoteVersion}
             title={`Revise version ${quoteVersion.version_no}`}
-            onSubmit={async (edits) => {
-              const revised = await reviseForRequest(request, edits);
-              if (revised) setRevisedVersionId(revised.id);
-              return revised;
-            }}
+            prefill={revisePrefillOf(request)}
+            onSubmit={(edits) => reviseForRequest(request, edits)}
             onCancel={() => setMode("VIEW")}
           />
         ) : (
