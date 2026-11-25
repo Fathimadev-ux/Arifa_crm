@@ -9,14 +9,14 @@ import { Avatar, enterDelay } from "@/components/ui";
 import { EASE_SMOOTH, STAGGER_STEP } from "@/config/motion";
 
 const HOUR = 3_600_000;
-const HOURS_BEFORE_NOW = 6;
-const WINDOW_HOURS = 12;
+/** Today's working day, so the track stays the same all day and "now" moves across it. */
+const DAY_START_HOUR = 9;
+const DAY_END_HOUR = 21;
 const TICK_EVERY_HOURS = 2;
 const ROW_LIMIT = 6;
 
 function timelineWindow(now: number) {
-  const start = new Date(now).setMinutes(0, 0, 0) - HOURS_BEFORE_NOW * HOUR;
-  return { start, end: start + WINDOW_HOURS * HOUR };
+  return { start: new Date(now).setHours(DAY_START_HOUR, 0, 0, 0), end: new Date(now).setHours(DAY_END_HOUR, 0, 0, 0) };
 }
 
 /** The deals the timeline shows, so other lists can skip them instead of repeating them. */
@@ -41,7 +41,8 @@ interface FollowUpTimelineProps {
 export function FollowUpTimeline({ deals, ownerName, now, index }: FollowUpTimelineProps) {
   const { start: windowStart, end: windowEnd } = timelineWindow(now);
   const percentOf = (ms: number) => ((ms - windowStart) / (windowEnd - windowStart)) * 100;
-  const ticks = Array.from({ length: WINDOW_HOURS / TICK_EVERY_HOURS + 1 }, (_, tick) => windowStart + tick * TICK_EVERY_HOURS * HOUR);
+  const ticks = Array.from({ length: (DAY_END_HOUR - DAY_START_HOUR) / TICK_EVERY_HOURS + 1 }, (_, tick) => windowStart + tick * TICK_EVERY_HOURS * HOUR);
+  const isWorkingHours = now >= windowStart && now <= windowEnd;
   const rows = timelineDeals(deals, now);
 
   return (
@@ -54,9 +55,11 @@ export function FollowUpTimeline({ deals, ownerName, now, index }: FollowUpTimel
           {ticks.map((tick) => (
             <span key={tick} className="absolute inset-y-0 border-l border-dashed border-neutral-200" style={{ left: `${percentOf(tick)}%` }} />
           ))}
-          <span className="absolute inset-y-0 w-px bg-black" style={{ left: `${percentOf(now)}%` }}>
-            <span className="absolute -top-1 -left-[3px] size-[7px] rounded-full bg-black" />
-          </span>
+          {isWorkingHours && (
+            <span className="absolute inset-y-0 w-px bg-black" style={{ left: `${percentOf(now)}%` }}>
+              <span className="absolute -top-1 -left-[3px] size-[7px] rounded-full bg-black" />
+            </span>
+          )}
         </div>
 
         <ul className="relative space-y-1">
@@ -90,7 +93,7 @@ export function FollowUpTimeline({ deals, ownerName, now, index }: FollowUpTimel
             );
           })}
         </ul>
-        {rows.length === 0 && <p className="py-8 text-center text-sm text-neutral-400">No follow-ups in these hours</p>}
+        {rows.length === 0 && <p className="py-8 text-center text-sm text-neutral-400">No follow-ups today between 9 AM and 9 PM</p>}
 
         <div className="relative mt-3 ml-20 h-4 text-[11px] text-neutral-400 sm:ml-36" aria-hidden>
           {ticks.map((tick, tickIndex) => (

@@ -76,6 +76,8 @@ interface DealSeed {
   /** `noDelivery`: the quote has no delivery time yet, so it can't be approved until a revision adds one. */
   quotes?: { unitPrice?: number; status: string; ageHours: number; noDelivery?: true }[];
   lostReason?: string;
+  /** Requirement fields still unknown (DealDetail.missing_fields): the backend can't price a quote yet. */
+  missing?: string[];
   history: [actor: "ai" | "buyer" | "staff", text: string][];
 }
 
@@ -84,7 +86,7 @@ const SEEDS: DealSeed[] = [
     history: [["ai", "Started chat on the website"], ["ai", "Matched the 450ml foil container"]] },
   { number: 1002, company: "Green Leaf Restaurants", contact: "Priya Nair", phone: "+919986011872", channel: "email", city: "Bengaluru", product: "660ml Foil Container", quantity: 15000, stage: "NEW", owner: "Suresh", createdDaysAgo: 1, nextInHours: 5,
     history: [["ai", "Enquiry received by email"]] },
-  { number: 1003, company: "Madurai Mess Foods", contact: "Selvam P", phone: "+919443376120", channel: "whatsapp", city: "Madurai", product: "500ml Rectangular Container", quantity: 30000, stage: "QUALIFIED", owner: "Meena", createdDaysAgo: 2, nextInHours: 20,
+  { number: 1003, missing: ["delivery_city"], company: "Madurai Mess Foods", contact: "Selvam P", phone: "+919443376120", channel: "whatsapp", city: "Madurai", product: "500ml Rectangular Container", quantity: 30000, stage: "QUALIFIED", owner: "Meena", createdDaysAgo: 2, nextInHours: 20,
     history: [["ai", "Started chat on the website"], ["ai", "Qualified: score 82"]] },
   { number: 1004, company: "Kovai Cloud Kitchens", contact: "Vignesh R", phone: "+919003155408", channel: "whatsapp", city: "Coimbatore", product: "1000ml Round Container", quantity: 25000, stage: "QUOTATION", owner: "Divya", createdDaysAgo: 3, nextInHours: 1,
     quotes: [{ status: "pending_approval", ageHours: 2 }], history: [["ai", "Qualified: score 76"], ["ai", "Built the quote from the price list, waiting for approval"]] },
@@ -177,7 +179,7 @@ export function createDemoState(now: number): DemoState {
         email: `${seed.contact.split(" ")[0].toLowerCase()}@${seed.company.toLowerCase().replace(/[^a-z]/g, "")}.in`, preferred_channel: seed.channel, language: "en", timezone: "Asia/Kolkata", phone_status: "valid", company_id: null,
       },
       requirements: [{ id: `${id}-r`, product_id: null, product_text: seed.product, spec: {}, quantity: String(seed.quantity), unit: "pcs", delivery_country: "IN", delivery_city: seed.city, needed_by: toDate(createdMs + 30 * DAY) }],
-      missing_fields: [], lost_reason: seed.lostReason ?? null, lost_note: null,
+      missing_fields: seed.missing ?? [], lost_reason: seed.lostReason ?? null, lost_note: null,
       ai_summary: `${seed.contact} from ${seed.company} needs ${seed.quantity.toLocaleString("en-IN")} × ${seed.product}, delivered to ${seed.city}.`, ai_summary_at: toIso(now - HOUR),
       personal_contact_shared_at: null,
     });

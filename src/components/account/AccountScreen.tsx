@@ -1,5 +1,6 @@
 "use client";
 
+import { QRCodeSVG } from "qrcode.react";
 import { useState } from "react";
 import { changeMyPassword, confirmAuthenticator, setAvailability, startAuthenticatorSetup, useStaffAccounts } from "@/lib/api/admin";
 import { MIN_PASSWORD_LENGTH } from "@/lib/api/auth";
@@ -36,7 +37,12 @@ function AuthenticatorSetup() {
   if (!setup) return <Button variant="secondary" onClick={() => void startAuthenticatorSetup().then((result) => result && setSetup(result))}>Set up authenticator app</Button>;
   return (
     <FormCard title="Set up authenticator app" submitLabel="Turn on" canSubmit={code.length >= 6} onCancel={() => setSetup(null)} onSubmit={() => void confirmAuthenticator(code).then((result) => result !== undefined && setSetup(null))}>
-      <p className="text-sm text-neutral-600">In Google Authenticator or Microsoft Authenticator, add an account with this key, then type the 6-digit code it shows.</p>
+      <p className="text-sm text-neutral-600">Scan this QR code with Google Authenticator or Microsoft Authenticator, then type the 6-digit code it shows.</p>
+      {/* CRM_API.md §3: otpauth_uri is shown as a QR code to scan (white margin so phone cameras read it). */}
+      <div className="inline-block rounded-2xl bg-white p-3 ring-1 ring-black/5">
+        <QRCodeSVG value={setup.otpauth_uri} size={176} marginSize={1} title="Authenticator QR code" />
+      </div>
+      <p className="text-xs text-neutral-500">Can&apos;t scan? Add the account by entering this key:</p>
       <p className="rounded-2xl bg-black/[0.04] px-4 py-3 font-mono text-sm tracking-wider break-all select-all">{setup.secret}</p>
       <a href={setup.otpauth_uri} className="inline-block text-xs text-neutral-500 underline-offset-2 hover:text-black hover:underline">
         Open in the authenticator app (on this phone)

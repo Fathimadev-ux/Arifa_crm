@@ -15,7 +15,6 @@ import { openCommandPalette } from "@/components/CommandPalette";
 import { Avatar } from "@/components/ui";
 import { POPOVER_SPRING } from "@/config/motion";
 
-const ATTENTION_LIMIT = 6;
 
 function AttentionBell() {
   const { data: inbox } = useInbox();
@@ -54,8 +53,10 @@ function AttentionBell() {
             transition={POPOVER_SPRING}
             className="absolute top-full right-0 z-40 mt-2 w-80 rounded-3xl bg-white/85 p-2 backdrop-blur-2xl shadow-2xl ring-1 ring-black/5"
           >
-            <p className="px-3 pt-2 pb-2 text-sm font-semibold">Needs attention</p>
-            {items.slice(0, ATTENTION_LIMIT).map((item) => (
+            <p className="px-3 pt-2 pb-2 text-sm font-semibold">Needs attention · {items.length}</p>
+            {/* Every item, so the list matches the number on the bell; a long list scrolls inside the box. */}
+            <div className="scroll-thin max-h-96 overflow-y-auto">
+            {items.map((item) => (
               <Link
                 key={`${item.kind}-${item.ref_id}`}
                 href={`/deals/${item.deal_id}`}
@@ -72,7 +73,13 @@ function AttentionBell() {
                 {now !== null && item.due_at && <span className="shrink-0 pr-2 text-[11px] text-neutral-400">{formatRelative(item.due_at, now)}</span>}
               </Link>
             ))}
+            </div>
             {items.length === 0 && <p className="px-3 pb-4 text-sm text-neutral-400">Nothing needs you right now.</p>}
+            {items.length > 0 && (
+              <Link href="/inbox" onClick={() => setIsOpen(false)} className="press mt-1 block rounded-full px-3 py-2 text-center text-xs font-medium text-neutral-500 hover:bg-neutral-100 hover:text-black">
+                Open inbox
+              </Link>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

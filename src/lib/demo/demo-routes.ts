@@ -193,6 +193,8 @@ const QUOTE_ROUTES: [string, RegExp, Handler][] = [
     return version ? json(version) : problem(404, "Quote version not found");
   }],
   ["POST", /^\/v1\/deals\/([^/]+)\/quotes$/, withDeal((deal) => {
+    // Like the backend's business rule (422 rule_violation): an incomplete requirement can't be priced yet.
+    if (deal.missing_fields.length) return problem(422, `The requirement isn't complete, so the price list can't price it: ${deal.missing_fields.join(", ")} missing`, { reason: "incomplete_requirement" });
     const version = addQuoteVersion(deal);
     changeDeal(deal, {}, `Built quote v${version.version_no} from the price list, waiting for approval`, "ai");
     return json(version, 201);

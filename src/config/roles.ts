@@ -61,7 +61,8 @@ const PERMISSIONS: Record<Permission, Role[]> = {
   OPEN_SETTINGS: ["manager", "admin", "md"],
   SEE_FX: ["manager", "md"],
   DECIDE_MATERIAL_PRICES: ["manager", "md"],
-  MANAGE_USERS: ["admin"],
+  // CRM_API.md "Who: admin, md" for add, edit, reset-mfa and unlock (/v1/users).
+  MANAGE_USERS: ["admin", "md"],
   EDIT_CHANNELS: ["admin"],
   SET_KILL_SWITCH: ["admin", "md"],
   // 18 Nov (§12, §5.1–5.3).

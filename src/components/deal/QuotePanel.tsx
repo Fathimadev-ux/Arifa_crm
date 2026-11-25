@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ROLE_LABEL, type Role, can } from "@/config/roles";
 import { isClosedStage } from "@/config/stages";
+import type { ApiError } from "@/lib/api/client";
 import { type Approval, type DealDetail, type QuoteDecision, type QuoteVersion, decideApproval, findOpenApproval, requestQuote, useDecidedApprovals, useInbox, useOpenApprovals, useQuotes } from "@/lib/api/crm";
 import { reviseForRequest, revisePrefillOf, useChangeRequests } from "@/lib/api/change-requests";
 import { reviseQuote } from "@/lib/api/deal-work";
@@ -133,6 +134,29 @@ export function QuoteValues({ quote }: { quote: QuoteVersion }) {
   );
 }
 
+/**
+ * Why "Request quote" was refused, kept on screen: the backend's message (CRM_API.md §6: "show detail"), its reason
+ * code, and the deal's missing fields when there are any (the usual cause: the requirement isn't complete yet).
+ */
+function QuoteRequestError({ error, missingFields, onClose }: { error: ApiError; missingFields: string[]; onClose: () => void }) {
+  return (
+    <div role="alert" className="animate-enter mt-4 space-y-2 rounded-2xl border border-black p-4 text-sm">
+      <div className="flex items-start justify-between gap-3">
+        <p className="font-semibold">The quote couldn&apos;t be built</p>
+        <button onClick={onClose} aria-label="Close" className="press -mt-1 rounded-full px-2 py-1 text-xs text-neutral-500 hover:bg-black/5 hover:text-black">
+          Close
+        </button>
+      </div>
+      <p>{error.message}</p>
+      {missingFields.length > 0 && <p className="text-neutral-600">Missing on this deal: {missingFields.map(humanize).join(", ")}. Add them (or ask the buyer), then request again, or use Manual quote.</p>}
+      <p className="text-xs text-neutral-400">
+        {error.status ? `Error ${error.status}` : "No answer from the server"}
+        {error.reason && ` · ${error.reason}`}
+      </p>
+    </div>
+  );
+}
+
 /** The newest quote version (the backend builds every price) and the earlier versions under it. */
 export function QuotePanel({ deal }: { deal: DealDetail }) {
   const { user, role } = useSession();
@@ -147,6 +171,16 @@ export function QuotePanel({ deal }: { deal: DealDetail }) {
   const answeredRequest = openRequests?.find((request) => request.id === answeredRequestId) ?? openRequests?.[0];
   const canQuote = !isClosedStage(deal.stage);
   const requirement = deal.requirements[0];
+  // A refused "Request quote" stays on screen (with the backend's reason) until it is closed or retried.
+  const [quoteError, setQuoteError] = useState<ApiError | null>(null);
+  const [isRequesting, setIsRequesting] = useState(false);
+  const askForQuote = async () => {
+    setQuoteError(null);
+    setIsRequesting(true);
+    const { error } = await requestQuote(deal.id);
+    setIsRequesting(false);
+    setQuoteError(error ?? null);
+  };
   const manualForm = (
     <ManualQuoteForm
       dealId={deal.id}
@@ -178,11 +212,14 @@ export function QuotePanel({ deal }: { deal: DealDetail }) {
                 <Button variant="secondary" onClick={() => setMode("MANUAL")}>
                   Manual quote
                 </Button>
-                <Button onClick={() => void requestQuote(deal.id)}>Request quote</Button>
+                <Button disabled={isRequesting} onClick={() => void askForQuote()}>
+                  {isRequesting ? "Requesting…" : "Request quote"}
+                </Button>
               </div>
             )}
           </div>
         )}
+        {quoteError && mode !== "MANUAL" && <QuoteRequestError error={quoteError} missingFields={deal.missing_fields} onClose={() => setQuoteError(null)} />}
       </Section>
     );
   }

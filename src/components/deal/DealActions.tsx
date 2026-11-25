@@ -219,7 +219,16 @@ export function StageActions({ deal }: { deal: DealDetail }) {
         Mark lost
       </Button>
       {canMove && (
-        <Button onClick={() => setMode(needsForm ? (nextStage as "PAYMENT" | "WON") : "MOVE")}>Move to {stageLabel(nextStage)}</Button>
+        <Button
+          onClick={() => {
+            if (needsForm) setMode(nextStage as "PAYMENT" | "WON");
+            // Moving to Quotation needs no reason: one click moves it.
+            else if (nextStage === "QUOTATION") void moveDeal(deal, nextStage);
+            else setMode("MOVE");
+          }}
+        >
+          Move to {stageLabel(nextStage)}
+        </Button>
       )}
     </div>
   );

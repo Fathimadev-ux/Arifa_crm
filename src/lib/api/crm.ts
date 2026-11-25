@@ -162,8 +162,19 @@ export function reassignDeal(deal: Deal, userId: string, name: string) {
   return runAction(async () => unwrap(await api.POST("/v1/deals/{deal_id}/reassign", { ...dealPath(deal.id), body: { user_id: userId } })), `${deal.number} reassigned to ${name}`, afterDealChange(deal.id));
 }
 
-export function requestQuote(dealId: string) {
-  return runAction(async () => unwrap(await api.POST("/v1/deals/{deal_id}/quotes", dealPath(dealId))), "Quote requested", afterDealChange(dealId));
+/**
+ * Asks the backend to price a quote from the price list. A refusal is returned (not only toasted) so the Quote box
+ * can keep the backend's reason on screen until it is read: a toast disappears after a few seconds.
+ */
+export async function requestQuote(dealId: string): Promise<{ error?: ApiError }> {
+  try {
+    unwrap(await api.POST("/v1/deals/{deal_id}/quotes", dealPath(dealId)));
+    showToast("Quote requested");
+    revalidate(...afterDealChange(dealId));
+    return {};
+  } catch (error) {
+    return { error: error instanceof ApiError ? error : new ApiError(0, "Can't reach the server") };
+  }
 }
 
 const DECISION_MESSAGE: Record<QuoteDecision, string> = {
