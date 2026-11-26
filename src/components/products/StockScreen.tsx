@@ -15,7 +15,7 @@ function QuantityCell({ item, canEdit }: { item: StockItem; canEdit: boolean }) 
   if (draft === null) {
     return (
       <span className="flex items-center justify-end gap-2">
-        {formatCount(item.quantity)} {item.unit}
+        {formatCount(item.quantity)}
         {canEdit && (
           <button onClick={() => setDraft(item.quantity)} className="press rounded-full px-2.5 py-1 text-xs text-neutral-500 hover:bg-black/5 hover:text-black">
             Edit
@@ -67,10 +67,12 @@ export function StockScreen() {
   const nameOf = (item: StockItem) => products?.find((product) => product.id === item.product_id)?.name ?? item.material_code ?? "—";
 
   const columns: Column<StockItem>[] = [
-    { label: "Item", cell: (item) => nameOf(item), sub: (item) => humanize(item.item_type), width: "34%" },
-    { label: "Reserved", cell: (item) => `${formatCount(item.reserved_quantity)} ${item.unit}`, width: "18%", alignRight: true },
+    { label: "Item", cell: (item) => nameOf(item), sub: (item) => humanize(item.item_type), width: "30%" },
+    // Its own column (team request), so the numbers below are plain counts in this unit.
+    { label: "Unit", cell: (item) => item.unit, width: "12%" },
+    { label: "Reserved", cell: (item) => formatCount(item.reserved_quantity), width: "16%", alignRight: true },
     // Wide enough for the quantity box, Save and Cancel side by side.
-    { label: "On hand", cell: (item) => <QuantityCell item={item} canEdit={canEdit} />, width: "48%", alignRight: true },
+    { label: "On hand", cell: (item) => <QuantityCell item={item} canEdit={canEdit} />, width: "42%", alignRight: true },
   ];
 
   return (
