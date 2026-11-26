@@ -113,10 +113,18 @@ function isUnreachable(response: Response): boolean {
   return [502, 503, 504].includes(response.status) || ((response.status >= 500 || response.status === 404) && !isJson);
 }
 
+/**
+ * Sample content only on a computer that turned it on (.env.local: NEXT_PUBLIC_SAMPLE_DATA=on). Everywhere else
+ * (the backend team, Vercel) every call goes to the real backend and its errors show as they are.
+ */
+const isSampleDataAllowed = process.env.NEXT_PUBLIC_SAMPLE_DATA === "on";
+
 // The request body, kept so the same call can be answered from sample content after the network attempt.
 const bodies = new Map<string, Promise<string>>();
 
-export const demoMiddleware: Middleware = {
+const realBackendOnly: Middleware = { onRequest: () => undefined };
+
+const sampleFallback: Middleware = {
   async onRequest({ request, id }) {
     const bodyText = request.clone().text();
     if (isDemo) return answer(request.method, request.url, await bodyText);
@@ -137,3 +145,5 @@ export const demoMiddleware: Middleware = {
     return answer(request.method, request.url, await bodyText);
   },
 };
+
+export const demoMiddleware = isSampleDataAllowed ? sampleFallback : realBackendOnly;
