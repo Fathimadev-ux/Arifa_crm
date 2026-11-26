@@ -26,12 +26,14 @@ const CUSTOMER_TYPES: { value: CustomerType | ""; label: string }[] = [
 
 const optional = (value: string) => value.trim() || null;
 
-/** Name, designation, company, preferred channel, language, time zone. Phone and email change through the deal. */
-export function ContactEditor({ contact, companies, onClose }: { contact: Contact; companies: Company[]; onClose: () => void }) {
+/**
+ * Name, designation, preferred channel, language, time zone. Phone and email change through the deal. The company
+ * isn't edited here (team decision), and company_id is left out of the save so the contact keeps its company.
+ */
+export function ContactEditor({ contact, onClose }: { contact: Contact; onClose: () => void }) {
   const [form, setForm] = useState({
     full_name: contact.full_name ?? "",
     designation: contact.designation ?? "",
-    company_id: contact.company_id ?? "",
     preferred_channel: contact.preferred_channel ?? "",
     language: contact.language,
     timezone: contact.timezone,
@@ -42,7 +44,6 @@ export function ContactEditor({ contact, companies, onClose }: { contact: Contac
     const edit: ContactEdit = {
       full_name: optional(form.full_name),
       designation: optional(form.designation),
-      company_id: form.company_id || null,
       preferred_channel: (form.preferred_channel || null) as ContactEdit["preferred_channel"],
       language: optional(form.language),
       timezone: optional(form.timezone),
@@ -55,7 +56,6 @@ export function ContactEditor({ contact, companies, onClose }: { contact: Contac
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <TextInput label="Name" value={form.full_name} onChange={(event) => update({ full_name: event.target.value })} maxLength={200} />
         <TextInput label="Designation" value={form.designation} onChange={(event) => update({ designation: event.target.value })} maxLength={200} />
-        <Select label="Company" value={form.company_id} onChange={(event) => update({ company_id: event.target.value })} options={[{ value: "", label: "None" }, ...companies.map((company) => ({ value: company.id, label: company.name }))]} />
         <Select label="Prefers" value={form.preferred_channel} onChange={(event) => update({ preferred_channel: event.target.value })} options={CHANNELS} />
         <TextInput label="Language" value={form.language} onChange={(event) => update({ language: event.target.value })} maxLength={16} />
         <TextInput label="Time zone" value={form.timezone} onChange={(event) => update({ timezone: event.target.value })} maxLength={64} />

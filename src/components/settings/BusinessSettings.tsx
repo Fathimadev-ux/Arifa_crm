@@ -6,8 +6,11 @@ import { formatDateTime, humanize } from "@/lib/format";
 import { Button, ErrorState, LoadingState } from "@/components/ui";
 import { FieldGroup, PillList, Toggle, UnitInput } from "@/components/settings/SettingControls";
 
-/** Feature switches have no list of their own: they arrive among the settings under this prefix. */
-const FLAG_PREFIX = "feature.";
+/**
+ * Feature switches have no list of their own: they arrive among the settings as "features.<key>" (the live
+ * backend's names) and save through PUT /v1/feature-flags/<key> with {enabled}.
+ */
+const FLAG_PREFIX = "features.";
 
 /** Plain names and units for the known settings; a new one from the backend still shows with a tidied key. */
 const KNOWN: Record<string, { label: string; unit?: string }> = {
@@ -18,8 +21,9 @@ const KNOWN: Record<string, { label: string; unit?: string }> = {
   quote_validity_days: { label: "Quote valid for", unit: "days" },
   business_hours: { label: "Business hours" },
   opt_out_keywords: { label: "Opt-out words" },
-  "feature.price_scraper": { label: "Price scraper" },
-  "feature.voice_calls": { label: "AI voice calls" },
+  "features.scraping": { label: "Price scraper" },
+  "features.news_digest": { label: "News digest" },
+  "features.voice_calls": { label: "AI voice calls" },
 };
 
 const nameOf = (key: string) => KNOWN[key]?.label ?? humanize(key.replace(FLAG_PREFIX, "").replace(/\./g, " ")).replace(/\b(sla|vat|ai|fx)\b/gi, (word) => word.toUpperCase());
@@ -33,7 +37,8 @@ function SettingRow({ setting, canEdit }: { setting: Setting; canEdit: boolean }
   const label = nameOf(setting.key);
   const unit = KNOWN[setting.key]?.unit;
   const isChanged = JSON.stringify(draft) !== JSON.stringify(setting.value);
-  const isValid = draft !== "" && !(isList(draft) && draft.length === 0);
+  // SettingOut.value has no fixed type, so the backend may send null (not set yet): it shows as an empty box.
+  const isValid = draft !== "" && draft !== null && !(isList(draft) && draft.length === 0);
   const isDisabled = !canEdit;
 
   const save = (value: Value) =>
@@ -47,7 +52,7 @@ function SettingRow({ setting, canEdit }: { setting: Setting; canEdit: boolean }
     ) : isGroup(draft) ? (
       <FieldGroup value={draft} disabled={isDisabled} onChange={setDraft} />
     ) : (
-      <UnitInput value={draft as string | number} unit={unit} isNumber={typeof setting.value === "number"} label={label} disabled={isDisabled} onChange={setDraft} />
+      <UnitInput value={(draft ?? "") as string | number} unit={unit} isNumber={typeof setting.value === "number"} label={label} disabled={isDisabled} onChange={setDraft} />
     );
 
   return (

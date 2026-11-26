@@ -4,7 +4,8 @@
  * §5.2 message texts: what the AI says in fixed situations, the buyer messages that carry quotes and summaries,
  * and staff alerts. Staff write English; the AI translates buyer and AI texts into five languages.
  */
-import { api, unwrap, type Schemas } from "./client";
+import { showToast } from "@/components/Toaster";
+import { ApiError, api, unwrap, type Schemas } from "./client";
 import { runAction } from "./crm";
 import { revalidate, useApi } from "./use-api";
 
@@ -41,8 +42,13 @@ export function resetText(key: string) {
   return runAction(async () => unwrap(await api.POST("/v1/texts/{key}/reset", keyPath(key))), "Back to the built-in wording", [TEXTS]);
 }
 
+/** The toast says how many texts the backend queued, so "nothing to translate" is clear too. */
 export async function translateMissing() {
-  const result = await runAction(async () => unwrap(await api.POST("/v1/texts/translate-missing")), "Translations queued", [TEXTS]);
-  if (result?.queued) reloadAfterTranslation();
-  return result;
+  try {
+    const { queued } = unwrap(await api.POST("/v1/texts/translate-missing"));
+    showToast(queued > 0 ? `${queued} texts sent for translation` : "Nothing to translate");
+    if (queued > 0) reloadAfterTranslation();
+  } catch (error) {
+    showToast(error instanceof ApiError ? error.message : "Something went wrong");
+  }
 }

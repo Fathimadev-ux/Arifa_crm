@@ -18,7 +18,13 @@ interface TierDraft {
 
 const EMPTY_DRAFT: TierDraft = { minQty: "", maxQty: "", listPrice: "", minPrice: "", validFrom: "" };
 const draftOf = (tier: PriceTier): TierDraft => ({ minQty: tier.min_qty, maxQty: tier.max_qty ?? "", listPrice: tier.list_price, minPrice: tier.min_price ?? "", validFrom: "" });
-const isValid = (draft: TierDraft) => Number(draft.minQty) > 0 && Number(draft.listPrice) > 0 && (!draft.maxQty || Number(draft.maxQty) > Number(draft.minQty));
+/**
+ * Only the API document's rules (PriceTierIn): From qty and List price required, every number above 0. How To qty
+ * compares with From qty is left to the backend, whose refusal shows as a toast.
+ */
+const isAboveZero = (value: string) => Number(value) > 0;
+const isValid = (draft: TierDraft) =>
+  isAboveZero(draft.minQty) && isAboveZero(draft.listPrice) && (!draft.maxQty || isAboveZero(draft.maxQty)) && (!draft.minPrice || isAboveZero(draft.minPrice));
 
 function TierInputs({ draft, isNew, onChange }: { draft: TierDraft; isNew: boolean; onChange: (draft: TierDraft) => void }) {
   const field = (key: keyof TierDraft, label: string) => (

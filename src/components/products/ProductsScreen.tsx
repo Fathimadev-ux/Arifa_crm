@@ -3,7 +3,7 @@
 import { Boxes, FileDown, FileSpreadsheet, FileUp, History } from "lucide-react";
 import { useRef, useState } from "react";
 import { can } from "@/config/roles";
-import { type ImportResult, type Product, exportPriceList, importPriceList, useFilteredProducts, usePriceListHistory, useProducts } from "@/lib/api/catalogue";
+import { type ImportResult, type Product, exportPriceList, importPriceList, useFilteredProducts, usePriceListHistory, useProduct, useProducts } from "@/lib/api/catalogue";
 import { humanize } from "@/lib/format";
 import { useStaffNames } from "@/hooks/useStaffNames";
 import { useSession } from "@/store/session";
@@ -99,7 +99,7 @@ export function ProductsScreen() {
   const [openId, setOpenId] = useState<string | null>(null);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isPriceListOpen, setIsPriceListOpen] = useState(false);
-  const { data: history } = usePriceListHistory();
+  const { data: history } = usePriceListHistory(isHistoryOpen);
   const canEditPrices = can(role, "EDIT_PRICES");
   const canUseWorkbook = can(role, "USE_WORKBOOK");
   const [isWorkbookOpen, setIsWorkbookOpen] = useState(false);
@@ -107,7 +107,8 @@ export function ProductsScreen() {
 
   const needle = search.trim().toLowerCase();
   const visible = products?.filter((product) => !needle || `${product.name} ${product.sku} ${product.category_code}`.toLowerCase().includes(needle)) ?? [];
-  const openProduct = products?.find((product) => product.id === openId);
+  // An opened product is loaded on its own (GET /v1/products/{id}), so the panel shows it as it is now.
+  const openProduct = useProduct(openId);
 
   return (
     <>
@@ -180,9 +181,15 @@ export function ProductsScreen() {
           <ChangeHistory changes={history} nameOf={(id) => nameOf(id)} />
         </div>
       )}
-      {openProduct && (
+      {openId && (
         <div className="mb-4">
-          <ProductPanel product={openProduct} onClose={() => setOpenId(null)} />
+          {openProduct.data?.id === openId ? (
+            <ProductPanel product={openProduct.data} onClose={() => setOpenId(null)} />
+          ) : openProduct.error ? (
+            <ErrorState message={openProduct.error.message} />
+          ) : (
+            <div className="h-48 animate-pulse rounded-3xl bg-neutral-100" />
+          )}
         </div>
       )}
 

@@ -26,13 +26,28 @@ function QuantityCell({ item, canEdit }: { item: StockItem; canEdit: boolean }) 
   }
   return (
     <form
-      className="flex items-center justify-end gap-1"
+      className="flex flex-wrap items-center justify-end gap-1"
       onSubmit={(event) => {
         event.preventDefault();
         void setStock(item, draft).then((result) => result && setDraft(null));
       }}
     >
-      <input autoFocus type="number" min="0" step="any" value={draft} onChange={(event) => setDraft(event.target.value)} aria-label="Quantity on hand" className={`${INPUT} h-9 w-32`} />
+      {/* The unit sits inside the box, so the number is typed in the item's unit (sent unchanged as StockIn.unit). */}
+      {/* The wrapper sets the width: INPUT is w-full, so a width on the input itself is overridden. */}
+      <span className="relative w-36 shrink-0">
+        {/* No up/down arrows: they took the room the number needs in a narrow column. */}
+        <input
+          autoFocus
+          type="number"
+          min="0"
+          step="any"
+          value={draft}
+          onChange={(event) => setDraft(event.target.value)}
+          aria-label={`Quantity on hand (${item.unit})`}
+          className={`${INPUT} h-9 pr-12 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none`}
+        />
+        <span className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-xs text-neutral-400">{item.unit}</span>
+      </span>
       <Button type="submit" className="h-9 px-4" disabled={draft === "" || Number(draft) < 0}>
         Save
       </Button>
@@ -52,9 +67,10 @@ export function StockScreen() {
   const nameOf = (item: StockItem) => products?.find((product) => product.id === item.product_id)?.name ?? item.material_code ?? "—";
 
   const columns: Column<StockItem>[] = [
-    { label: "Item", cell: (item) => nameOf(item), sub: (item) => humanize(item.item_type), width: "40%" },
-    { label: "Reserved", cell: (item) => `${formatCount(item.reserved_quantity)} ${item.unit}`, width: "20%", alignRight: true },
-    { label: "On hand", cell: (item) => <QuantityCell item={item} canEdit={canEdit} />, width: "40%", alignRight: true },
+    { label: "Item", cell: (item) => nameOf(item), sub: (item) => humanize(item.item_type), width: "34%" },
+    { label: "Reserved", cell: (item) => `${formatCount(item.reserved_quantity)} ${item.unit}`, width: "18%", alignRight: true },
+    // Wide enough for the quantity box, Save and Cancel side by side.
+    { label: "On hand", cell: (item) => <QuantityCell item={item} canEdit={canEdit} />, width: "48%", alignRight: true },
   ];
 
   return (

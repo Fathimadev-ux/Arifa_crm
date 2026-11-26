@@ -78,9 +78,13 @@ export function renewSession(): Promise<boolean> {
 const pendingRetries = new Map<string, Request>();
 
 const authMiddleware: Middleware = {
-  onRequest({ request, id }) {
+  async onRequest({ request, id }) {
+    const isAuthCall = request.url.includes("/v1/auth/");
+    // After a page reload the token is renewed first: other calls wait for it instead of going out without one
+    // (which the backend answers with 401 "Bearer token missing").
+    if (!accessToken && !isAuthCall) await renewSession();
     if (accessToken) request.headers.set("Authorization", `Bearer ${accessToken}`);
-    if (!request.url.includes("/v1/auth/")) pendingRetries.set(id, request.clone());
+    if (!isAuthCall) pendingRetries.set(id, request.clone());
     return request;
   },
   async onResponse({ response, id }) {

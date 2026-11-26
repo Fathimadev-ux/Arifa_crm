@@ -2,7 +2,7 @@
 
 import { Plus } from "lucide-react";
 import { useState } from "react";
-import { type Company, type Contact, useCompanies, useContacts } from "@/lib/api/records";
+import { type Company, type Contact, useCompanies, useContact, useContacts } from "@/lib/api/records";
 import { channelLabel, formatDate, humanize } from "@/lib/format";
 import { useDebounced } from "@/hooks/useDebounced";
 import { type Column, DataTable, SearchBox } from "@/components/DataTable";
@@ -24,9 +24,8 @@ export function ContactsScreen() {
   const query = useDebounced(search.trim());
   const [openId, setOpenId] = useState<string | null>(null);
   const [isAddingCompany, setIsAddingCompany] = useState(false);
-  const contacts = useContacts(tab === "contacts" ? query : "");
-  const companies = useCompanies(tab === "companies" ? query : "");
-  const companyName = (id: string | null) => companies.data?.find((company) => company.id === id)?.name;
+  const contacts = useContacts(tab === "contacts" ? query : null);
+  const companies = useCompanies(tab === "companies" ? query : null);
 
   const switchTab = (next: Tab) => {
     setTab(next);
@@ -36,12 +35,11 @@ export function ContactsScreen() {
   };
 
   const contactColumns: Column<Contact>[] = [
-    { label: "Name", cell: (contact) => contact.full_name ?? "—", sub: (contact) => contact.designation, width: "24%" },
+    { label: "Name", cell: (contact) => contact.full_name ?? "—", sub: (contact) => contact.designation, width: "30%" },
     // phone_status: whether the number works (checked by the backend).
-    { label: "Phone", cell: (contact) => contact.phone_e164 ?? contact.whatsapp_e164 ?? "—", sub: (contact) => [contact.phone_status && humanize(contact.phone_status), contact.email].filter(Boolean).join(" · "), width: "26%" },
-    { label: "Company", cell: (contact) => companyName(contact.company_id) ?? "—", width: "20%" },
-    { label: "Prefers", cell: (contact) => (contact.preferred_channel ? channelLabel(contact.preferred_channel) : "—"), sub: (contact) => contact.language, width: "15%" },
-    { label: "Added", cell: (contact) => formatDate(contact.created_at), sub: (contact) => contact.source, width: "15%" },
+    { label: "Phone", cell: (contact) => contact.phone_e164 ?? contact.whatsapp_e164 ?? "—", sub: (contact) => [contact.phone_status && humanize(contact.phone_status), contact.email].filter(Boolean).join(" · "), width: "34%" },
+    { label: "Prefers", cell: (contact) => (contact.preferred_channel ? channelLabel(contact.preferred_channel) : "—"), sub: (contact) => contact.language, width: "18%" },
+    { label: "Added", cell: (contact) => formatDate(contact.created_at), sub: (contact) => contact.source, width: "18%" },
   ];
   const companyColumns: Column<Company>[] = [
     { label: "Company", cell: (company) => company.name, sub: (company) => company.customer_type, width: "30%" },
@@ -52,7 +50,8 @@ export function ContactsScreen() {
   ];
 
   const active = tab === "contacts" ? contacts : companies;
-  const openContact = contacts.data?.find((contact) => contact.id === openId);
+  // An opened row is loaded on its own (GET /v1/contacts/{id}), so the form shows the contact as it is now.
+  const openContact = useContact(tab === "contacts" ? openId : null);
   const openCompany = companies.data?.find((company) => company.id === openId);
 
   return (
@@ -79,7 +78,15 @@ export function ContactsScreen() {
       </div>
 
       <div className="mb-4 empty:hidden">
-        {openContact && <ContactEditor key={openContact.id} contact={openContact} companies={companies.data ?? []} onClose={() => setOpenId(null)} />}
+        {tab === "contacts" &&
+          openId &&
+          (openContact.data?.id === openId ? (
+            <ContactEditor key={openId} contact={openContact.data} onClose={() => setOpenId(null)} />
+          ) : openContact.error ? (
+            <ErrorState message={openContact.error.message} />
+          ) : (
+            <div className="h-48 animate-pulse rounded-3xl bg-neutral-100" />
+          ))}
         {(openCompany || isAddingCompany) && (
           <CompanyEditor
             key={openCompany?.id ?? "new"}

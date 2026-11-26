@@ -32,6 +32,9 @@ export interface ProductFilters {
 
 export const useProducts = () => useApi("products", async () => unwrap(await api.GET("/v1/products")));
 
+/** One product, loaded when it is opened (null skips the call). Under "products", so a save or link reloads it too. */
+export const useProduct = (id: string | null) => useApi(id ? `products:one:${id}` : null, async () => unwrap(await api.GET("/v1/products/{product_id}", productPath(id!))));
+
 /** The catalogue filtered by the backend (category, quotable only); without filters it is useProducts. */
 export function useFilteredProducts(filters: ProductFilters) {
   const query = { category: filters.category || undefined, quotable: filters.quotable || undefined };
@@ -81,7 +84,8 @@ export const usePriceTiers = (productId: string | null) =>
   useApi(productId ? `products:${productId}:tiers` : null, async () => unwrap(await api.GET("/v1/products/{product_id}/price-tiers", productPath(productId!))));
 export const useProductHistory = (productId: string | null) =>
   useApi(productId ? `products:${productId}:history` : null, async () => unwrap(await api.GET("/v1/products/{product_id}/history", { ...productPath(productId!), params: { ...productPath(productId!).params, query: { limit: 50 } } })));
-export const usePriceListHistory = () => useApi("products:price-list-history", async () => unwrap(await api.GET("/v1/price-list/history", { params: { query: { limit: 100 } } })));
+/** Only while "Price changes" is open (false skips the call). */
+export const usePriceListHistory = (isOpen: boolean) => useApi(isOpen ? "products:price-list-history" : null, async () => unwrap(await api.GET("/v1/price-list/history", { params: { query: { limit: 100 } } })));
 export const useStock = () => useApi("stock", async () => unwrap(await api.GET("/v1/stock")));
 
 /** D22: only the CRM-owned fields (MOQ, carton, unit, delivery days, quotable / active); the CMS owns the rest. */

@@ -114,8 +114,9 @@ export function createRecordsState(now: number): RecordsState {
     setting("quote_validity_days", 15, "How long a quote is valid", now),
     setting("business_hours", { days: "Mon–Sat", start: "09:00", end: "18:00", timezone: "Asia/Dubai" }, "When staff alerts and calls happen", now),
     setting("opt_out_keywords", ["STOP", "UNSUBSCRIBE", "NO MORE"], "Words that count as a stop from the buyer", now),
-    setting("feature.price_scraper", false, "Material price proposals from the scraper (v2)", now),
-    setting("feature.voice_calls", false, "AI voice calls (v2)", now),
+    setting("features.scraping", false, "Material price proposals from the scraper (v2)", now),
+    setting("features.news_digest", false, "Daily news digest for the team", now),
+    setting("features.voice_calls", false, "AI voice calls (v2)", now),
   ];
 
   records.fx = [

@@ -145,11 +145,10 @@ function UserEditor({ account, staff, canManage, onClose }: { account: StaffAcco
           <Button type="button" variant="secondary" onClick={() => void resetStaffMfa(account)}>
             Reset authenticator
           </Button>
-          {account.locked && (
-            <Button type="button" variant="secondary" onClick={() => void unlockStaff(account)}>
-              Unlock
-            </Button>
-          )}
+          {/* Always offered (team decision): the admin can lift a lock-out whenever someone asks. */}
+          <Button type="button" variant="secondary" onClick={() => void unlockStaff(account)}>
+            Unlock
+          </Button>
         </div>
       )}
     </FormCard>

@@ -156,7 +156,7 @@ export const ADMIN_ROUTES: [string, RegExp, Handler][] = [
     return json(setting);
   }],
   ["PUT", /^\/v1\/feature-flags\/([^/]+)$/, ([key], body) => {
-    const setting = getRecords().settings.find((item) => item.key === `feature.${key}`);
+    const setting = getRecords().settings.find((item) => item.key === `features.${key}`);
     if (setting) Object.assign(setting, { value: Boolean(body.enabled), updated_at: nowIso() });
     return new Response(null, { status: 204 });
   }],

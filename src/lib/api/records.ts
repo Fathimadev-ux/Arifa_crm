@@ -14,11 +14,17 @@ export type ExportFormat = "csv" | "xlsx";
 
 const PAGE_SIZE = 100;
 
-export const useContacts = (search: string) =>
-  useApi(`contacts:${search}`, async () => unwrap(await api.GET("/v1/contacts", { params: { query: { q: search || undefined, limit: PAGE_SIZE } } })).items);
+/** null skips the call (the Companies tab doesn't need the contacts). */
+export const useContacts = (search: string | null) =>
+  useApi(search === null ? null : `contacts:${search}`, async () => unwrap(await api.GET("/v1/contacts", { params: { query: { q: search || undefined, limit: PAGE_SIZE } } })).items);
 
-export const useCompanies = (search: string) =>
-  useApi(`companies:${search}`, async () => unwrap(await api.GET("/v1/companies", { params: { query: { q: search || undefined, limit: PAGE_SIZE } } })).items);
+/** One contact, loaded when its row is opened (null skips the call). Under "contacts", so a save reloads it too. */
+export const useContact = (id: string | null) =>
+  useApi(id ? `contacts:one:${id}` : null, async () => unwrap(await api.GET("/v1/contacts/{contact_id}", { params: { path: { contact_id: id! } } })));
+
+/** null skips the call (the Contacts tab doesn't need the companies). */
+export const useCompanies = (search: string | null) =>
+  useApi(search === null ? null : `companies:${search}`, async () => unwrap(await api.GET("/v1/companies", { params: { query: { q: search || undefined, limit: PAGE_SIZE } } })).items);
 
 export const useOrders = (status: string) =>
   useApi(`orders:list:${status}`, async () => unwrap(await api.GET("/v1/orders", { params: { query: { status: status || undefined, limit: PAGE_SIZE } } })).items);
@@ -43,7 +49,8 @@ export async function saveFile(response: Response, fallbackName: string) {
   const url = URL.createObjectURL(await response.blob());
   const link = Object.assign(document.createElement("a"), { href: url, download: name });
   link.click();
-  URL.revokeObjectURL(url);
+  // Freed a minute later: freeing it at once can break the download of a big file in some browsers.
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
 /** §20.12: a list as CSV or Excel (a salesperson only gets their own deals and orders). */

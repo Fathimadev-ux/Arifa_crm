@@ -24,6 +24,7 @@ import { GlassBackdrop } from "@/components/GlassBackdrop";
 
 type Step =
   | { name: "SIGN_IN" }
+  | { name: "CHOOSE"; challenge: Challenge }
   | { name: "CODE"; challenge: Challenge; method: "totp" | "email" }
   | { name: "NEW_PASSWORD" }
   | { name: "FORGOT" }
@@ -31,6 +32,7 @@ type Step =
 
 const TITLES: Record<Step["name"], string> = {
   SIGN_IN: "Log in",
+  CHOOSE: "Verify it's you",
   CODE: "Verify it's you",
   NEW_PASSWORD: "Set a new password",
   FORGOT: "Reset password",
@@ -116,12 +118,8 @@ export function LoginScreen() {
     goTo({ name: "CODE", challenge, method: "email" }, `We sent a code to ${email}`);
   };
 
-  const handleSignIn = submit(async () => {
-    const challenge = await startLogin(email.trim(), password);
-    // The authenticator app comes first; the email code is the fallback (and the only way before it is set up).
-    if (challenge.methods.includes("totp")) goTo({ name: "CODE", challenge, method: "totp" });
-    else await askForEmailCode(challenge);
-  });
+  // The person picks how to get the code (team request): nothing is emailed until they choose the email code.
+  const handleSignIn = submit(async () => goTo({ name: "CHOOSE", challenge: await startLogin(email.trim(), password) }));
 
   const handleCode = (challenge: Challenge, method: "totp" | "email") =>
     submit(async () => signedIn(method === "totp" ? await verifyAppCode(challenge, code) : await verifyEmailCode(challenge, code)));
@@ -167,6 +165,30 @@ export function LoginScreen() {
           </form>
         )}
 
+        {step.name === "CHOOSE" && (
+          <div className="mt-8 space-y-3">
+            <p className="text-center text-sm text-neutral-500">How do you want to get your code?</p>
+            {step.challenge.methods.includes("totp") && (
+              <button type="button" disabled={isBusy} onClick={() => goTo({ name: "CODE", challenge: step.challenge, method: "totp" })} className="press h-11 w-full rounded-full bg-black text-sm font-medium text-white shadow-md hover:bg-neutral-800 disabled:bg-neutral-400">
+                Authenticator app
+              </button>
+            )}
+            {step.challenge.methods.includes("email") && (
+              <button type="button" disabled={isBusy} onClick={submit(() => askForEmailCode(step.challenge))} className="press glass h-11 w-full rounded-full text-sm font-medium shadow-sm hover:bg-white disabled:opacity-50">
+                {isBusy ? "Sending…" : "Send code to my email"}
+              </button>
+            )}
+            {/* Email sign-in gives mfa false (CRM_API.md §3): approvals need the app. */}
+            <p className="text-center text-xs text-neutral-400">
+              {step.challenge.methods.includes("totp") ? "An emailed code can’t approve quotes" : "Set up the authenticator app after signing in to approve quotes"}
+            </p>
+            {message && <p className="text-sm font-medium">{message}</p>}
+            <button type="button" onClick={() => goTo({ name: "SIGN_IN" })} className={`${LINK} mx-auto block`}>
+              Back
+            </button>
+          </div>
+        )}
+
         {step.name === "CODE" && (
           <form onSubmit={handleCode(step.challenge, step.method)} className="mt-8 space-y-4">
             <p className="text-center text-sm text-neutral-500">{step.method === "totp" ? "Enter the code from your authenticator app." : "Enter the code from your email."}</p>
@@ -175,13 +197,14 @@ export function LoginScreen() {
             {message && <p className="text-sm font-medium">{message}</p>}
             <SubmitButton isBusy={isBusy}>Log in</SubmitButton>
             <div className="flex justify-center gap-1">
-              {step.method === "totp" && step.challenge.methods.includes("email") && (
+              {step.method === "email" && (
                 <button type="button" disabled={isBusy} onClick={submit(() => askForEmailCode(step.challenge))} className={LINK}>
-                  Email me a code
+                  Send again
                 </button>
               )}
-              <button type="button" onClick={() => goTo({ name: "SIGN_IN" })} className={LINK}>
-                Back
+              {/* Back to the choice, so the person can switch between the app and the email code. */}
+              <button type="button" onClick={() => goTo({ name: "CHOOSE", challenge: step.challenge })} className={LINK}>
+                Use another way
               </button>
             </div>
           </form>

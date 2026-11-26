@@ -145,9 +145,10 @@ export function MessageTexts({ canEdit }: { canEdit: boolean }) {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <SegmentedControl options={TEXT_GROUPS} value={group} onChange={(next) => (setGroup(next), setOpenKey(null))} label="Group" />
-        {canEdit && untranslated > 0 && (
+        {/* Always there for editors (CRM_API.md §5.2): the backend also translates built-in texts our count can't see. */}
+        {canEdit && (
           <Button variant="secondary" onClick={() => void translateMissing()}>
-            <Languages className="size-4" /> Translate missing ({untranslated})
+            <Languages className="size-4" /> Translate missing{untranslated > 0 && ` (${untranslated})`}
           </Button>
         )}
       </div>

@@ -77,7 +77,7 @@ export function FieldGroup({ value, disabled, onChange }: { value: Record<string
         <label key={key} className="block min-w-0">
           <span className="mb-1 block px-1 text-[11px] text-neutral-400">{humanize(key)}</span>
           <input
-            value={item}
+            value={item ?? ""}
             onChange={(event) => onChange({ ...value, [key]: typeof item === "number" ? Number(event.target.value) : event.target.value })}
             type={typeof item === "string" && TIME.test(item) ? "time" : typeof item === "number" ? "number" : "text"}
             disabled={disabled}
